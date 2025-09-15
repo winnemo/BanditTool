@@ -24,8 +24,7 @@ function simulation() {
     //     // Hier können Sie die Plot-Funktionalität implementieren
     //     console.log('Generating plot...');
     // };
-
-
+    
     return (
         <>
             <h2>Simulation Tool</h2>

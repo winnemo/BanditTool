@@ -9,7 +9,7 @@ function App() {
         <>
             <h1>Can you beat the k-armed-bandit?</h1>
             <p>Hier könnte deine Werbung stehen!</p>
-            <Simulation></Simulation>
+            <Simulation> </Simulation>
 
         </>
     )
