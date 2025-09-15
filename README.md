@@ -1,4 +1,4 @@
-# Vorbedingungen
+# Voraussetzungen
 
 - Node.js installieren
     - Node.js [Download](https://nodejs.org/en/download)
@@ -11,7 +11,7 @@
       git clone git@github.com:winnemo/BanditTool.git
       ```
 
-## Einrichten für User
+# Einrichten für User
 
 #### 1. Terminal / CMD öffnen
 
