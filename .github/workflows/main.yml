@@ -16,8 +16,10 @@ jobs:
           node-version: 20
       - name: Install dependencies
         run: npm install
+        working-directory: BanditTool
       - name: Run tests
         run: npm test
+        working-directory: BanditTool
 
   deploy:
     runs-on: ubuntu-latest
