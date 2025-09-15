@@ -25,6 +25,7 @@ const Configuration = ({drugs, patients, handleDrugsChange, handlePatientsChange
                     />
                 </div>
             </div>
+
             {/* Patients Configuration */}
             <div>
                 <label id="patientsLabel">Patients</label>
@@ -44,6 +45,17 @@ const Configuration = ({drugs, patients, handleDrugsChange, handlePatientsChange
                         max="1000"
                         value={patients}
                         onChange={handlePatientsChange}
+                    />
+                </div>
+            </div>
+            {/* Bandit Configuration */}
+            <div>
+                <label id="banditLabel">Bandit</label>
+                <div className="banditInput">
+                    <input
+                        type="number"
+                        id="bandit"
+
                     />
                 </div>
             </div>

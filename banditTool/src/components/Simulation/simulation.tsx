@@ -35,6 +35,7 @@ function simulation() {
                     handleDrugsChange={handleDrugsChange}
                     handlePatientsChange={handlePatientsChange}
                 />
+
             </div>
         </>
     )
