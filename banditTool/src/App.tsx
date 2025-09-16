@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import ConfigurationPanel from './components/configuration';
-import ControlButtons from './components/ControlButtons';
+import ControlButtons from './components/controlButtons.tsx';
 import GameInterface from './components/game';
 import PerformanceChart from './components/performanceChart';
 import { useGameLogic } from './hooks/useGameLogic';
@@ -25,14 +25,14 @@ const MultiArmedBanditApp = () => {
     } = useGameLogic(config);
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 text-white">
-            <div className="container mx-auto p-6">
+        <div className="">
+            <div className="container">
                 {/* Header */}
-                <div className="text-center mb-8">
-                    <h1 className="text-4xl font-bold mb-2 bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
+                <div className="">
+                    <h1 className="">
                         Multi-Armed Bandit
                     </h1>
-                    <p className="text-slate-300">Medizinische Behandlungsoptimierung</p>
+                    <p className=""> leck eier </p>
                 </div>
 
                 {/* Configuration Panel */}

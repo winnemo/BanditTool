@@ -9,9 +9,9 @@ const PerformanceChart = ({
     if (!isVisible || algorithmPerformance.length === 0) return null;
 
     return (
-        <div className="bg-slate-800/50 backdrop-blur-sm rounded-xl p-6 border border-slate-700">
-            <h3 className="text-xl font-semibold mb-4">Performance Vergleich</h3>
-            <div className="h-80">
+        <div className="">
+            <h3 className="">Performance Vergleich</h3>
+            <div className="">
                 <ResponsiveContainer width="100%" height="100%">
                     <LineChart data={algorithmPerformance}>
                         <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
