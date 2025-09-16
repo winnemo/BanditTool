@@ -1,0 +1,42 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install dependencies
+        run: npm install
+        working-directory: banditTool
+
+      - name: Run tests
+        run: npm test
+        working-directory: banditTool
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: build
+    if: success() && github.ref == 'refs/heads/main'
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Deploy to production
+        run: echo "Deployment process starts here..."
+        env:
+          MY_SECRET_API_KEY: ${{ secrets.MY_SECRET_API_KEY }}
