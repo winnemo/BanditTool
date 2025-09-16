@@ -6,7 +6,7 @@
 - Git-Repository clonen
     - SSH-Key in Github einrichten (
       empfohlen): [Anleitung](https://docs.github.com/en/authentication/connecting-to-github-with-ssh/generating-a-new-ssh-key-and-adding-it-to-the-ssh-agent)
-    - Im gewünschten Ordner über Terminal clonen:
+    - Im gewünschten Ordner über Terminal klonen:
       ```bash
       git clone git@github.com:winnemo/BanditTool.git
       ```
