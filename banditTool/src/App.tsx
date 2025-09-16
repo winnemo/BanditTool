@@ -1,47 +1,70 @@
-import {useState} from 'react'
-import './App.css'
-import Simulation from "./components/Simulation/simulation.tsx";
+import React, { useState } from 'react';
+import ConfigurationPanel from './components/configuration';
+import ControlButtons from './components/controlButtons.tsx';
+import GameInterface from './components/game';
+import PerformanceChart from './components/performanceChart';
+import { useGameLogic } from './hooks/useGameLogic';
+import "./App.css";
 
-function App() {
-    const [count, setCount] = useState(0)
+const MultiArmedBanditApp = () => {
+    // Configuration state
+    const [config, setConfig] = useState({
+        numDrugs: 5,
+        numPatients: 10,
+        banditType: 'bernoulli',
+        algorithm: 'epsilon-greedy'
+    });
+
+    // Use custom hook for game logic
+    const {
+        gameState,
+        algorithmPerformance,
+        handleDrugChoice,
+        startGame,
+        showPlot,
+        isGameComplete
+    } = useGameLogic(config);
 
     return (
-        <>
-            <h1>Can you beat the k-armed-bandit?</h1>
-            <p>Hier könnte deine Werbung stehen!</p>
-            <Simulation></Simulation>
+        <div className="app-container">
 
-        </>
-    )
-    // standard-return
-    //
-    // return (
-    //   <>
-    //     <div>
-    //       <a href="https://vite.dev" target="_blank">
-    //         <img src={viteLogo} className="logo" alt="Vite logo" />
-    //       </a>
-    //       <a href="https://react.dev" target="_blank">
-    //         <img src={reactLogo} className="logo react" alt="React logo" />
-    //       </a>
-    //     </div>
-    //
-    //     <h1>Vite + React</h1>
-    //
-    //     <div className="card">
-    //       <button onClick={() => setCount((count) => count + 1)}>
-    //         count is {count}
-    //       </button>
-    //       <p>
-    //         Edit <code>src/App.tsx</code> and save to test HMR
-    //       </p>
-    //     </div>
-    //
-    //     <p className="read-the-docs">
-    //       Click on the Vite and React logos to learn more
-    //     </p>
-    //   </>
-    // )
-}
+            {/* Header */}
+            <div className="header">
+                <h1 className="title">
+                    Multi-Armed Bandit
+                </h1>
+                <p className="subtitle"> leck eier </p>
+            </div>
 
-export default App
+            <div className="configuration-container">
+                {/* Configuration Panel */}
+                <ConfigurationPanel config={config} setConfig={setConfig} />
+
+                {/* Control Buttons */}
+                <ControlButtons
+                    onStartGame={startGame}
+                    onShowPlot={showPlot}
+                    hasGameData={gameState.gameData.length > 0}
+                />
+            </div>
+
+            {/* Game Interface */}
+            <GameInterface
+                gameState={gameState}
+                config={config}
+                onDrugChoice={handleDrugChoice}
+                isGameComplete={isGameComplete}
+            />
+
+            {/* Performance Chart */}
+            <PerformanceChart
+                algorithmPerformance={algorithmPerformance}
+                config={config}
+                isVisible={gameState.showPlot}
+            />
+        </div>
+
+    );
+};
+
+export default MultiArmedBanditApp;
