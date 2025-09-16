@@ -1,41 +1,63 @@
 import React from 'react';
 import { Settings, Pill, Users, Brain } from 'lucide-react';
+import "./configuration.css";
+
 
 const ConfigurationPanel = ({ config, setConfig }) => {
     return (
-        <div className="">
-            <div className="">
-                <Settings className="mr-2" size={20} />
-                <h2 className="">Konfiguration</h2>
+        <div className="config-panel">
+            <div className="config-header">
+                <h2 className="config-title">Konfiguration</h2>
             </div>
 
-            <div className="">
+            <div className="config-grid">
                 <div>
-                    <label className="">
-                        <Pill className="" size={16} />
+                    <label className="config-item label">
                         Anzahl Medikamente
                     </label>
-                    <select
+                    <input
+                        type="range"
+                        min="1"
+                        max="50"
                         value={config.numDrugs}
-                        onChange={(e) => setConfig({...config, numDrugs: parseInt(e.target.value)})}
+                        onChange={(e) =>
+                            setConfig({...config, numDrugs: parseInt(e.target.value, 10)})
+                        }
                         className=""
-                    >
-                        {[2,3,4,5].map(n => <option key={n} value={n}>{n}</option>)}
-                    </select>
+                    />
+                    <input
+                        type="number"
+                        min="1"
+                        max="50"
+                        value={config.numDrugs}
+                        onChange={(e) =>
+                            setConfig({...config, numDrugs: parseInt(e.target.value, 10)})
+                        }
+                        className=""
+                    />
                 </div>
 
                 <div>
                     <label className="">
-                        <Users className="" size={16} />
                         Anzahl Patienten
                     </label>
-                    <select
+                    <input
+                        type="range"
+                        min="1"
+                        max="1000"
                         value={config.numPatients}
-                        onChange={(e) => setConfig({...config, numPatients: parseInt(e.target.value)})}
+                        onChange={(e) =>
+                            setConfig({...config, numPatients: parseInt(e.target.value, 10)})
+                        }
                         className=""
-                    >
-                        {[50, 100, 200, 500].map(n => <option key={n} value={n}>{n}</option>)}
-                    </select>
+                    />
+                    <input
+                        type="number"
+                        min="1"
+                        max="1000"
+                        value={config.numPatients}
+                        onChange={(e) => setConfig({...config, numPatients: parseInt(e.target.value)})}>
+                    </input>
                 </div>
 
                 <div>
@@ -52,7 +74,6 @@ const ConfigurationPanel = ({ config, setConfig }) => {
 
                 <div>
                     <label className="">
-                        <Brain className="" size={16} />
                         Algorithmus
                     </label>
                     <select

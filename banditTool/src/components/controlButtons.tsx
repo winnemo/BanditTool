@@ -1,5 +1,6 @@
 import React from 'react';
 import { Play, BarChart3 } from 'lucide-react';
+import "./controlButtons.css";
 
 const ControlButtons = ({
                             onStartGame,

@@ -4,12 +4,13 @@ import ControlButtons from './components/controlButtons.tsx';
 import GameInterface from './components/game';
 import PerformanceChart from './components/performanceChart';
 import { useGameLogic } from './hooks/useGameLogic';
+import "./App.css";
 
 const MultiArmedBanditApp = () => {
     // Configuration state
     const [config, setConfig] = useState({
-        numDrugs: 3,
-        numPatients: 100,
+        numDrugs: 5,
+        numPatients: 10,
         banditType: 'bernoulli',
         algorithm: 'epsilon-greedy'
     });
@@ -25,16 +26,17 @@ const MultiArmedBanditApp = () => {
     } = useGameLogic(config);
 
     return (
-        <div className="">
-            <div className="container">
-                {/* Header */}
-                <div className="">
-                    <h1 className="">
-                        Multi-Armed Bandit
-                    </h1>
-                    <p className=""> leck eier </p>
-                </div>
+        <div className="app-container">
 
+            {/* Header */}
+            <div className="header">
+                <h1 className="title">
+                    Multi-Armed Bandit
+                </h1>
+                <p className="subtitle"> leck eier </p>
+            </div>
+
+            <div className="configuration-container">
                 {/* Configuration Panel */}
                 <ConfigurationPanel config={config} setConfig={setConfig} />
 
@@ -44,23 +46,24 @@ const MultiArmedBanditApp = () => {
                     onShowPlot={showPlot}
                     hasGameData={gameState.gameData.length > 0}
                 />
-
-                {/* Game Interface */}
-                <GameInterface
-                    gameState={gameState}
-                    config={config}
-                    onDrugChoice={handleDrugChoice}
-                    isGameComplete={isGameComplete}
-                />
-
-                {/* Performance Chart */}
-                <PerformanceChart
-                    algorithmPerformance={algorithmPerformance}
-                    config={config}
-                    isVisible={gameState.showPlot}
-                />
             </div>
+
+            {/* Game Interface */}
+            <GameInterface
+                gameState={gameState}
+                config={config}
+                onDrugChoice={handleDrugChoice}
+                isGameComplete={isGameComplete}
+            />
+
+            {/* Performance Chart */}
+            <PerformanceChart
+                algorithmPerformance={algorithmPerformance}
+                config={config}
+                isVisible={gameState.showPlot}
+            />
         </div>
+
     );
 };
 
