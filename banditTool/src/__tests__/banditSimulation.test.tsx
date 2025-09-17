@@ -2,6 +2,7 @@ import {
     generateDrugProbabilities,
     initializeDrugStats
 } from '../utils/banditSimulation';
+import { describe, test, expect } from 'vitest';
 
 // 'describe' gruppiert zusammengehörige Tests
 describe('initializeDrugStats', () => {
