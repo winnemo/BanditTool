@@ -10,10 +10,10 @@ const ControlButtons = ({
                             hasGameData
                         }) => {
     return (
-        <div className="">
+        <div className="control-buttons-container">
             <button
                 onClick={onStartGame}
-                className=""
+                className="control-button"
             >
                 <Play className="" size={20} />
                 Spiel starten
@@ -24,7 +24,7 @@ const ControlButtons = ({
                 disabled={!hasGameData}
                 className=""
             >
-                <BarChart3 className="" size={20} />
+                <BarChart3 className="control-button" size={20} />
                 Graphen anzeigen
             </button>
         </div>
