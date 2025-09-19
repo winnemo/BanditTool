@@ -42,7 +42,7 @@ describe('GameInterface', () => {
         );
 
         // Assert: Überprüfe, ob der Text und die berechnete Erfolgsrate korrekt sind.
-        expect(screen.getByRole('heading', { name: /spiel beendet!/i })).toBeInTheDocument();
+        expect(screen.getByRole('heading', { name: /Spiel beendet!/i })).toBeInTheDocument();
         expect(screen.getByText(/Sie haben 7 von 10 Patienten gerettet/i)).toBeInTheDocument();
         expect(screen.getByText(/Erfolgsrate: 70.0%/i)).toBeInTheDocument();
     });
