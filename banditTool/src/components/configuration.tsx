@@ -88,7 +88,7 @@ const ConfigurationPanel = ({ config, setConfig }) => {
                         id="algorithm"
                         value={config.algorithm}
                         onChange={(e) => setConfig({...config, algorithm: e.target.value})}
-                        className="config-select" // CSS-Klasse hinzugefügt
+                        className="config-select"
                     >
                         <option value="greedy">Greedy</option>
                         <option value="epsilon-greedy">ε-Greedy</option>
