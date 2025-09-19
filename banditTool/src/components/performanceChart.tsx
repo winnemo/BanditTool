@@ -11,7 +11,7 @@ const PerformanceChart = ({
     return (
         <div className="">
             <h3 className="">Performance Vergleich</h3>
-            <div className="">
+            <div className="chart-container">
                 <ResponsiveContainer width="100%" height="100%">
                     <LineChart data={algorithmPerformance}>
                         <CartesianGrid strokeDasharray="3 3" stroke="#374151" />

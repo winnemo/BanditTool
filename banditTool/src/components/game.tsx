@@ -1,13 +1,17 @@
 import React from 'react';
 
+//Rendert HHaupt-Benutzeroberfläche und hat drei Anzeigezustände (nichts, Endauswertung, aktive spielansicht)
+
 const GameInterface = ({
                            gameState,
                            config,
                            onDrugChoice,
                            isGameComplete
                        }) => {
+    // Fall 1: spiel hat nicht begonnen und ist nicht beendet
     if (!gameState.isPlaying && !isGameComplete) return null;
 
+    // Fall 2: Spiel ist beendet, zeige zusammenfassung an
     if (isGameComplete) {
         return (
             <div className="">
@@ -22,6 +26,7 @@ const GameInterface = ({
         );
     }
 
+    //Fall 3: Spiel läuft: zeigt Spieloberfläche
     return (
         <div className="">
             <div className="">
