@@ -2,6 +2,8 @@ import React from 'react';
 import { Play, BarChart3 } from 'lucide-react';
 import "./controlButtons.css";
 
+//Schaltflächen zum Starten der Simulation und zum Grafen anzeigen
+
 const ControlButtons = ({
                             onStartGame,
                             onShowPlot,

@@ -2,6 +2,9 @@ import React from 'react';
 import { Settings, Pill, Users, Brain } from 'lucide-react';
 import "./configuration.css";
 
+// Konfigurationsmöglichkeiten anzeigen und an übergeordnete Komponenete weitergeben
+// 4 Parameter können eingestellt werden: Anzahl Medikamente, Anzahl Patienten, Bandit Typ, Algorithmus
+//läuft on change
 
 const ConfigurationPanel = ({ config, setConfig }) => {
     return (
