@@ -6,7 +6,7 @@ export const generateDrugProbabilities = (numDrugs, banditType) => {
         //für bernoulli: zufällige Erfolgsw'keit von 0.1-0.9
         if (banditType == 'bernoulli') {
             probs.push(Math.random() * 0.8 + 0.1);
-            //für gaussian mean von 10 - 90 und St. Abw. 5 - 20
+            //für gaussian mean von 10 bis 90 und Standard Abweichung 5 - 20
         } else if(banditType == 'gaussian') {
             probs.push({
                 mean: Math.random() * 80 + 10,
