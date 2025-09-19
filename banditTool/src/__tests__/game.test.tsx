@@ -69,8 +69,8 @@ describe('GameInterface', () => {
             />
         );
 
-        // KORREKTUR: Finde die Elemente über statische Teile.
-        const patientElement = screen.getByText(/Patient/i);
+        // Suche nach einer Überschrift (h1, h2, h3...), die den Text "Patient" enthält.
+        const patientElement = screen.getByRole('heading', { name: /Patient/i });
         expect(patientElement).toHaveTextContent('Patient 5 von 10');
 
         const livesElement = screen.getByText(/Gerettete Leben:/i);
