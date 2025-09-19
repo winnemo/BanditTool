@@ -4,7 +4,7 @@ import { describe, test, expect, vi } from 'vitest';
 import '@testing-library/jest-dom';
 
 // Die zu testende Komponente importieren
-import ControlButtons from '../components/ControlButtons'; // Passe den Pfad bei Bedarf an
+import ControlButtons from '../components/controlButtons';
 
 describe('ControlButtons', () => {
 
