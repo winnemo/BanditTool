@@ -4,7 +4,7 @@ import userEvent from '@testing-library/user-event';
 import { describe, test, expect, vi } from 'vitest';
 
 // Die zu testende Komponente importieren
-import ConfigurationPanel from '../components/configuration'; // Passe den Pfad ggf. an
+import ConfigurationPanel from '../components/configuration';
 
 // Eine Gruppe von Tests für die ConfigurationPanel-Komponente
 describe('ConfigurationPanel', () => {
