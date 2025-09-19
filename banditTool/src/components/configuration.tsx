@@ -1,10 +1,7 @@
 import React from 'react';
+// Die Icons werden aktuell nicht verwendet, können aber drin bleiben
 import { Settings, Pill, Users, Brain } from 'lucide-react';
 import "./configuration.css";
-
-// Konfigurationsmöglichkeiten anzeigen und an übergeordnete Komponenete weitergeben
-// 4 Parameter können eingestellt werden: Anzahl Medikamente, Anzahl Patienten, Bandit Typ, Algorithmus
-//läuft on change
 
 const ConfigurationPanel = ({ config, setConfig }) => {
     return (
@@ -15,10 +12,12 @@ const ConfigurationPanel = ({ config, setConfig }) => {
 
             <div className="config-grid">
                 <div>
-                    <label className="config-item label">
+                    {/* htmlFor und id hinzugefügt */}
+                    <label htmlFor="numDrugs-number" className="config-item label">
                         Anzahl Medikamente
                     </label>
                     <input
+                        id="numDrugs-range"
                         type="range"
                         min="1"
                         max="50"
@@ -26,9 +25,10 @@ const ConfigurationPanel = ({ config, setConfig }) => {
                         onChange={(e) =>
                             setConfig({...config, numDrugs: parseInt(e.target.value, 10)})
                         }
-                        className=""
+                        aria-labelledby="numDrugs-number" // Hilft Screenreadern
                     />
                     <input
+                        id="numDrugs-number"
                         type="number"
                         min="1"
                         max="50"
@@ -36,15 +36,16 @@ const ConfigurationPanel = ({ config, setConfig }) => {
                         onChange={(e) =>
                             setConfig({...config, numDrugs: parseInt(e.target.value, 10)})
                         }
-                        className=""
                     />
                 </div>
 
                 <div>
-                    <label className="">
+                    {/* htmlFor und id hinzugefügt */}
+                    <label htmlFor="numPatients-number" className="">
                         Anzahl Patienten
                     </label>
                     <input
+                        id="numPatients-range"
                         type="range"
                         min="1"
                         max="1000"
@@ -52,9 +53,10 @@ const ConfigurationPanel = ({ config, setConfig }) => {
                         onChange={(e) =>
                             setConfig({...config, numPatients: parseInt(e.target.value, 10)})
                         }
-                        className=""
+                        aria-labelledby="numPatients-number" // Hilft Screenreadern
                     />
                     <input
+                        id="numPatients-number"
                         type="number"
                         min="1"
                         max="1000"
@@ -64,11 +66,13 @@ const ConfigurationPanel = ({ config, setConfig }) => {
                 </div>
 
                 <div>
-                    <label className="">Bandit Typ</label>
+                    {/* htmlFor und id hinzugefügt */}
+                    <label htmlFor="banditType" className="">Bandit Typ</label>
                     <select
+                        id="banditType"
                         value={config.banditType}
                         onChange={(e) => setConfig({...config, banditType: e.target.value})}
-                        className=""
+                        className="config-select" // CSS-Klasse hinzugefügt
                     >
                         <option value="bernoulli">Bernoulli</option>
                         <option value="gaussian">Gaussian</option>
@@ -76,13 +80,15 @@ const ConfigurationPanel = ({ config, setConfig }) => {
                 </div>
 
                 <div>
-                    <label className="">
+                    {/* htmlFor und id hinzugefügt */}
+                    <label htmlFor="algorithm" className="">
                         Algorithmus
                     </label>
                     <select
+                        id="algorithm"
                         value={config.algorithm}
                         onChange={(e) => setConfig({...config, algorithm: e.target.value})}
-                        className=""
+                        className="config-select" // CSS-Klasse hinzugefügt
                     >
                         <option value="greedy">Greedy</option>
                         <option value="epsilon-greedy">ε-Greedy</option>

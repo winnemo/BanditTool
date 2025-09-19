@@ -28,6 +28,7 @@
     background: white;
     cursor: pointer;
     transition: all 0.2s ease;
+    color: #333;
 }
 
 .config-select:hover {
