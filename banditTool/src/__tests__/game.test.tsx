@@ -8,8 +8,8 @@ import GameInterface from '../components/game.tsx';
 describe('GameInterface', () => {
     // Mock-Daten für die Tests
     const mockConfig = {
-        numDrugs: 3,
-        numPatients: 10,
+        numActions: 3,
+        numIterations: 10,
     };
 
     // Testfall 1: Dieser Test ist bereits korrekt.
@@ -77,7 +77,7 @@ describe('GameInterface', () => {
         expect(livesElement).toHaveTextContent('Gerettete Leben: 2');
 
         const drugButtons = screen.getAllByRole('button', { name: /Medikament \d/i });
-        expect(drugButtons).toHaveLength(mockConfig.numDrugs);
+        expect(drugButtons).toHaveLength(mockConfig.numActions);
 
         const drug1SuccessRate = screen.getByText(/Erfolgsrate: 50.0%/i);
         expect(drug1SuccessRate).toBeInTheDocument();

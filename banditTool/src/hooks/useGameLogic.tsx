@@ -17,7 +17,7 @@ export const useGameLogic = (config) => {
 
     // Initialize drug probabilities when config changes
     useEffect(() => {
-        const probs = generateDrugProbabilities(config.numDrugs, config.banditType);
+        const probs = generateDrugProbabilities(config.numActions, config.banditType);
         setDrugProbabilities(probs);
 
         // Reset game state
@@ -26,15 +26,15 @@ export const useGameLogic = (config) => {
             savedLives: 0,
             gameData: [],
             isPlaying: false,
-            drugStats: initializeDrugStats(config.numDrugs),
+            drugStats: initializeDrugStats(config.numActions),
             showPlot: false
         });
 
         setAlgorithmPerformance([]);
-    }, [config.numDrugs, config.banditType]);
+    }, [config.numActions, config.banditType]);
 
     const handleDrugChoice = (drugIndex) => {
-        if (!gameState.isPlaying || gameState.currentPatient >= config.numPatients) return;
+        if (!gameState.isPlaying || gameState.currentPatient >= config.numIterations) return;
 
         const success = simulateDrugOutcome(drugIndex, drugProbabilities, config.banditType);
         const newSavedLives = gameState.savedLives + (success ? 1 : 0);
@@ -59,7 +59,7 @@ export const useGameLogic = (config) => {
             savedLives: newSavedLives,
             gameData: newGameData,
             drugStats: newDrugStats,
-            isPlaying: newCurrentPatient < config.numPatients
+            isPlaying: newCurrentPatient < config.numIterations
         });
     };
 
@@ -69,7 +69,7 @@ export const useGameLogic = (config) => {
             savedLives: 0,
             gameData: [],
             isPlaying: true,
-            drugStats: initializeDrugStats(config.numDrugs),
+            drugStats: initializeDrugStats(config.numActions),
             showPlot: false
         });
         setAlgorithmPerformance([]);
@@ -78,12 +78,12 @@ export const useGameLogic = (config) => {
     const runAlgorithmSimulation = () => {
         const algorithmData = [];
         let algorithmSavedLives = 0;
-        const algorithmDrugStats = initializeDrugStats(config.numDrugs);
+        const algorithmDrugStats = initializeDrugStats(config.numActions);
 
-        for (let patient = 0; patient < config.numPatients; patient++) {
-            const drugChoice = patient < config.numDrugs
-                ? patient % config.numDrugs
-                : algorithms[config.algorithm](algorithmDrugStats, config.numDrugs);
+        for (let patient = 0; patient < config.numIterations; patient++) {
+            const drugChoice = patient < config.numActions
+                ? patient % config.numActions
+                : algorithms[config.algorithm](algorithmDrugStats, config.numActions);
 
             const success = simulateDrugOutcome(drugChoice, drugProbabilities, config.banditType);
 
@@ -118,7 +118,7 @@ export const useGameLogic = (config) => {
         setGameState({ ...gameState, showPlot: true });
     };
 
-    const isGameComplete = !gameState.isPlaying && gameState.currentPatient >= config.numPatients;
+    const isGameComplete = !gameState.isPlaying && gameState.currentPatient >= config.numIterations;
 
     return {
         gameState,

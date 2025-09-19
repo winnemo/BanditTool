@@ -15,15 +15,15 @@ export const algorithms = {
         return bestDrug;
     },
 
-    'epsilon-greedy': (drugStats, numDrugs) => {
+    'epsilon-greedy': (drugStats, numActions) => {
         if (Math.random() < 0.1) { // 10% exploration
-            return Math.floor(Math.random() * numDrugs);
+            return Math.floor(Math.random() * numActions);
         } else {
             return algorithms.greedy(drugStats);
         }
     },
 
-    random: (drugStats, numDrugs) => {
-        return Math.floor(Math.random() * numDrugs);
+    random: (drugStats, numActions) => {
+        return Math.floor(Math.random() * numActions);
     }
 };

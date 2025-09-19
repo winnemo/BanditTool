@@ -12,8 +12,8 @@ describe('ConfigurationPanel', () => {
 
     // Ein Standard-Konfigurationsobjekt für die Tests
     const initialConfig = {
-        numDrugs: 10,
-        numPatients: 100,
+        numActions: 10,
+        numIterations: 100,
         banditType: 'bernoulli',
         algorithm: 'greedy',
     };
@@ -27,8 +27,8 @@ describe('ConfigurationPanel', () => {
         expect(screen.getByRole('heading', { name: /konfiguration/i })).toBeInTheDocument();
 
         // Überprüfe die Zahlen-Eingabefelder
-        expect(screen.getByRole('spinbutton', { name: /anzahl medikamente/i })).toHaveValue(initialConfig.numDrugs);
-        expect(screen.getByRole('spinbutton', { name: /anzahl patienten/i })).toHaveValue(initialConfig.numPatients);
+        expect(screen.getByRole('spinbutton', { name: /anzahl medikamente/i })).toHaveValue(initialConfig.numActions);
+        expect(screen.getByRole('spinbutton', { name: /anzahl patienten/i })).toHaveValue(initialConfig.numIterations);
 
         // Überprüfe die Dropdown-Menüs (Selects)
         expect(screen.getByRole('combobox', { name: /bandit typ/i })).toHaveValue(initialConfig.banditType);
@@ -47,7 +47,7 @@ describe('ConfigurationPanel', () => {
 
         // Assert: Überprüfe, ob die Mock-Funktion genau einmal mit den richtigen Daten aufgerufen wurde
         expect(mockSetConfig).toHaveBeenCalledTimes(1);
-        expect(mockSetConfig).toHaveBeenCalledWith({ ...initialConfig, numDrugs: 25 });
+        expect(mockSetConfig).toHaveBeenCalledWith({ ...initialConfig, numActions: 25 });
     });
 
     // Testfall 3: Überprüft, ob das Ändern eines Schiebereglers die setConfig-Funktion korrekt aufruft.
@@ -61,7 +61,7 @@ describe('ConfigurationPanel', () => {
         fireEvent.change(patientSlider, { target: { value: '500' } });
 
         // Assert
-        expect(mockSetConfig).toHaveBeenCalledWith({ ...initialConfig, numPatients: 500 });
+        expect(mockSetConfig).toHaveBeenCalledWith({ ...initialConfig, numIterations: 500 });
     });
 
     // Testfall 4: Überprüft, ob das Ändern eines Dropdown-Menüs die setConfig-Funktion korrekt aufruft.

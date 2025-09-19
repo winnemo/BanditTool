@@ -17,10 +17,10 @@ const GameInterface = ({
             <div className="">
                 <h3 className="">Spiel beendet!</h3>
                 <p className="">
-                    Sie haben <span className="">{gameState.savedLives}</span> von {config.numPatients} Patienten gerettet
+                    Sie haben <span className="">{gameState.savedLives}</span> von {config.numIterations} Patienten gerettet
                 </p>
                 <p className="">
-                    Erfolgsrate: {((gameState.savedLives / config.numPatients) * 100).toFixed(1)}%
+                    Erfolgsrate: {((gameState.savedLives / config.numIterations) * 100).toFixed(1)}%
                 </p>
             </div>
         );
@@ -31,7 +31,7 @@ const GameInterface = ({
         <div className="">
             <div className="">
                 <h3 className="">
-                    Patient {gameState.currentPatient + 1} von {config.numPatients}
+                    Patient {gameState.currentPatient + 1} von {config.numIterations}
                 </h3>
                 <p className="">
                     Gerettete Leben: <span className="">{gameState.savedLives}</span>
@@ -41,7 +41,7 @@ const GameInterface = ({
             <div className="">
                 <p className="">Wählen Sie ein Medikament für diesen Patienten:</p>
                 <div className="">
-                    {Array.from({length: config.numDrugs}).map((_, index) => (
+                    {Array.from({length: config.numActions}).map((_, index) => (
                         <button
                             key={index}
                             onClick={() => onDrugChoice(index)}

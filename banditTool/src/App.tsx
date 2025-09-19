@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import ConfigurationPanel from './components/configuration';
 import ControlButtons from './components/controlButtons.tsx';
 import GameInterface from './components/game';
@@ -9,8 +9,8 @@ import "./App.css";
 const MultiArmedBanditApp = () => {
     // Configuration state
     const [config, setConfig] = useState({
-        numDrugs: 5,
-        numPatients: 10,
+        numActions: 5,
+        numIterations: 10,
         banditType: 'bernoulli',
         algorithm: 'epsilon-greedy'
     });
@@ -29,39 +29,43 @@ const MultiArmedBanditApp = () => {
         <div className="app-container">
 
             {/* Header */}
-            <div className="header">
+            <div className="header-container">
                 <h1 className="title">
                     Multi-Armed Bandit
                 </h1>
-                <p className="subtitle"> leck eier </p>
+                <h2 className="subtitle"> Hier könnte Ihre Werbung stehen! </h2>
             </div>
 
-            <div className="configuration-container">
-                {/* Configuration Panel */}
-                <ConfigurationPanel config={config} setConfig={setConfig} />
+            <div className="content-container">
+                <div className="configuration-container">
+                    {/* Configuration Panel */}
+                    <ConfigurationPanel config={config} setConfig={setConfig} />
 
-                {/* Control Buttons */}
-                <ControlButtons
-                    onStartGame={startGame}
-                    onShowPlot={showPlot}
-                    hasGameData={gameState.gameData.length > 0}
-                />
+                    {/* Control Buttons */}
+                    <ControlButtons
+                        onStartGame={startGame}
+                        onShowPlot={showPlot}
+                        hasGameData={gameState.gameData.length > 0}
+                    />
+                </div>
+
+                <div className="output-container">
+                    {/* Game Interface */}
+                    <GameInterface
+                        gameState={gameState}
+                        config={config}
+                        onDrugChoice={handleDrugChoice}
+                        isGameComplete={isGameComplete}
+                    />
+
+                    {/* Performance Chart */}
+                    <PerformanceChart
+                        algorithmPerformance={algorithmPerformance}
+                        config={config}
+                        isVisible={gameState.showPlot}
+                    />
+                </div>
             </div>
-
-            {/* Game Interface */}
-            <GameInterface
-                gameState={gameState}
-                config={config}
-                onDrugChoice={handleDrugChoice}
-                isGameComplete={isGameComplete}
-            />
-
-            {/* Performance Chart */}
-            <PerformanceChart
-                algorithmPerformance={algorithmPerformance}
-                config={config}
-                isVisible={gameState.showPlot}
-            />
         </div>
 
     );

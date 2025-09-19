@@ -1,8 +1,8 @@
 
 //Gerieren der Startparameter für Simulation
-export const generateDrugProbabilities = (numDrugs, banditType) => {
+export const generateDrugProbabilities = (numActions, banditType) => {
     const probs = [];
-    for (let i = 0; i < numDrugs; i++) {
+    for (let i = 0; i < numActions; i++) {
         //für bernoulli: zufällige Erfolgsw'keit von 0.1-0.9
         if (banditType == 'bernoulli') {
             probs.push(Math.random() * 0.8 + 0.1);
@@ -26,7 +26,7 @@ function getGaussianRandom(mean, std) {
     while(u === 0) u = Math.random();
     while(v === 0) v = Math.random();
     //Box Muller Formel
-    let z = Math.sqrt(-2.0 * Math.log(u)) * Math.cos(2.0 * Math.PI * v);
+    const z = Math.sqrt(-2.0 * Math.log(u)) * Math.cos(2.0 * Math.PI * v);
     //Skalieren mit Mittelwert und Standardabweichung
     return z * std + mean;
 }
@@ -47,9 +47,9 @@ export const simulateDrugOutcome = (drugIndex, drugProbabilities, banditType) =>
     }
 };
 
-export const initializeDrugStats = (numDrugs) => {
+export const initializeDrugStats = (numActions) => {
     const stats = {};
-    for (let i = 0; i < numDrugs; i++) {
+    for (let i = 0; i < numActions; i++) {
         stats[`drug${i}`] = { attempts: 0, successes: 0 };
     }
     return stats;
