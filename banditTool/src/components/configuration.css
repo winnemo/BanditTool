@@ -1,8 +1,9 @@
 
 .config-grid {
     display: grid;
-    gap: 1rem
+    gap: 1rem;
 }
+
 .config-panel {
     display: flex;
     flex-direction: column;

@@ -1,11 +1,13 @@
 .control-buttons-container {
     display: flex;
-    justify-content: center;
     gap: 1rem;
     margin-top: 1.5rem;
+
+
+    .control-button {
+        display: flex;
+        flex-direction: row;
+        gap: 0.5rem;
+    }
 }
 
-
-.control-button {
-
-}

@@ -1,0 +1,5 @@
+.action-button {
+    gap: 1rem;
+    display: flex;
+    flex-direction: column;
+}

@@ -26,55 +26,118 @@ describe('ConfigurationPanel', () => {
         // Assert: Überprüfe, ob die Elemente auf dem Bildschirm sind und die richtigen Werte haben
         expect(screen.getByRole('heading', { name: /konfiguration/i })).toBeInTheDocument();
 
-        // Überprüfe die Zahlen-Eingabefelder
-        expect(screen.getByRole('spinbutton', { name: /anzahl medikamente/i })).toHaveValue(initialConfig.numActions);
-        expect(screen.getByRole('spinbutton', { name: /anzahl patienten/i })).toHaveValue(initialConfig.numIterations);
+        // Überprüfe die spezifischen Input-Elemente anhand ihrer IDs
+        const numActionsNumber = document.getElementById('numActions-number');
+        const numActionsRange = document.getElementById('numActions-range');
+        const numIterationsNumber = document.getElementById('numIterations-number');
+        const numIterationsRange = document.getElementById('numIterations-range');
+        const banditTypeSelect = document.getElementById('banditType');
+        const algorithmSelect = document.getElementById('algorithm');
 
-        // Überprüfe die Dropdown-Menüs (Selects)
-        expect(screen.getByRole('combobox', { name: /bandit typ/i })).toHaveValue(initialConfig.banditType);
-        expect(screen.getByRole('combobox', { name: /algorithmus/i })).toHaveValue(initialConfig.algorithm);
+        expect(numActionsNumber).toHaveValue(10);
+        expect(numActionsRange).toHaveValue('10');
+        expect(numIterationsNumber).toHaveValue(100);
+        expect(numIterationsRange).toHaveValue('100');
+        expect(banditTypeSelect).toHaveValue('bernoulli');
+        expect(algorithmSelect).toHaveValue('greedy');
     });
 
-// Testfall 2
-    test('sollte setConfig aufrufen, wenn die Anzahl der Medikamente geändert wird', () => {
-        // Arrange: Erstelle eine Mock-Funktion, um Aufrufe zu verfolgen
-        const mockSetConfig = vi.fn();
-        render(<ConfigurationPanel config={initialConfig} setConfig={mockSetConfig} />);
-
-        // Act: Simuliere eine einzelne, direkte Wertänderung
-        const drugInput = screen.getByRole('spinbutton', { name: /anzahl medikamente/i });
-        fireEvent.change(drugInput, { target: { value: '25' } });
-
-        // Assert: Überprüfe, ob die Mock-Funktion genau einmal mit den richtigen Daten aufgerufen wurde
-        expect(mockSetConfig).toHaveBeenCalledTimes(1);
-        expect(mockSetConfig).toHaveBeenCalledWith({ ...initialConfig, numActions: 25 });
-    });
-
-    // Testfall 3: Überprüft, ob das Ändern eines Schiebereglers die setConfig-Funktion korrekt aufruft.
-    test('sollte setConfig aufrufen, wenn der Patienten-Slider geändert wird', () => {
+    // Testfall 2: Überprüft, ob das Ändern der Anzahl Medikamente (Number Input) funktioniert
+    test('sollte setConfig aufrufen, wenn die Anzahl der Medikamente per Zahleneingabe geändert wird', () => {
         // Arrange
         const mockSetConfig = vi.fn();
         render(<ConfigurationPanel config={initialConfig} setConfig={mockSetConfig} />);
 
-        // Act: Simuliere eine Änderung am Schieberegler
-        const patientSlider = screen.getByRole('slider', { name: /anzahl patienten/i });
-        fireEvent.change(patientSlider, { target: { value: '500' } });
+        // Act: Finde das spezifische Number-Input anhand seiner ID
+        const drugNumberInput = document.getElementById('numActions-number');
+        fireEvent.change(drugNumberInput, { target: { value: '25' } });
 
         // Assert
-        expect(mockSetConfig).toHaveBeenCalledWith({ ...initialConfig, numIterations: 500 });
+        expect(mockSetConfig).toHaveBeenCalledWith({ ...initialConfig, numActions: 25 });
     });
 
-    // Testfall 4: Überprüft, ob das Ändern eines Dropdown-Menüs die setConfig-Funktion korrekt aufruft.
+    // Testfall 3: Überprüft, ob das Ändern des Medikamente-Sliders funktioniert
+    test('sollte setConfig aufrufen, wenn der Medikamente-Slider geändert wird', () => {
+        // Arrange
+        const mockSetConfig = vi.fn();
+        render(<ConfigurationPanel config={initialConfig} setConfig={mockSetConfig} />);
+
+        // Act: Finde den Range-Input anhand seiner ID
+        const drugSlider = document.getElementById('numActions-range');
+        fireEvent.change(drugSlider, { target: { value: '30' } });
+
+        // Assert
+        expect(mockSetConfig).toHaveBeenCalledWith({ ...initialConfig, numActions: 30 });
+    });
+
+    // Testfall 4: Überprüft, ob das Ändern der Patienten-Anzahl (Number Input) funktioniert
+    test('sollte setConfig aufrufen, wenn die Patienten-Anzahl per Zahleneingabe geändert wird', () => {
+        // Arrange
+        const mockSetConfig = vi.fn();
+        render(<ConfigurationPanel config={initialConfig} setConfig={mockSetConfig} />);
+
+        // Act: Finde den Number-Input anhand seiner ID
+        const patientNumberInput = document.getElementById('numIterations-number');
+        fireEvent.change(patientNumberInput, { target: { value: '750' } });
+
+        // Assert
+        expect(mockSetConfig).toHaveBeenCalledWith({ ...initialConfig, numIterations: 750 });
+    });
+
+    // Testfall 6: Überprüft, ob das Ändern des Bandit-Typs funktioniert
+    test('sollte setConfig aufrufen, wenn der Bandit-Typ geändert wird', async () => {
+        // Arrange
+        const mockSetConfig = vi.fn();
+        render(<ConfigurationPanel config={initialConfig} setConfig={mockSetConfig} />);
+
+        // Act: Finde das Select-Element anhand seiner ID
+        const banditSelect = document.getElementById('banditType');
+        await userEvent.selectOptions(banditSelect, 'gaussian');
+
+        // Assert
+        expect(mockSetConfig).toHaveBeenCalledWith({ ...initialConfig, banditType: 'gaussian' });
+    });
+
+    // Testfall 7: Überprüft, ob das Ändern des Algorithmus funktioniert
     test('sollte setConfig aufrufen, wenn der Algorithmus geändert wird', async () => {
         // Arrange
         const mockSetConfig = vi.fn();
         render(<ConfigurationPanel config={initialConfig} setConfig={mockSetConfig} />);
 
-        // Act: Simuliere die Auswahl einer neuen Option
-        const algorithmSelect = screen.getByRole('combobox', { name: /algorithmus/i });
+        // Act: Finde das Algorithmus-Select anhand seiner ID
+        const algorithmSelect = document.getElementById('algorithm');
         await userEvent.selectOptions(algorithmSelect, 'epsilon-greedy');
 
         // Assert
         expect(mockSetConfig).toHaveBeenCalledWith({ ...initialConfig, algorithm: 'epsilon-greedy' });
+    });
+
+    // Testfall 8: Überprüft, ob alle Labels vorhanden sind
+    test('sollte alle erforderlichen Labels anzeigen', () => {
+        // Arrange
+        render(<ConfigurationPanel config={initialConfig} setConfig={() => {}} />);
+
+        // Assert: Überprüfe, ob alle Labels vorhanden sind
+        expect(screen.getByText('Anzahl Medikamente')).toBeInTheDocument();
+        expect(screen.getByText('Anzahl Patienten')).toBeInTheDocument();
+        expect(screen.getByText('Bandit-Typ')).toBeInTheDocument();
+        expect(screen.getByText('Algorithmus')).toBeInTheDocument();
+    });
+
+    // Testfall 9: Überprüft, ob alle Optionen in den Select-Elementen vorhanden sind
+    test('sollte alle Optionen in den Dropdown-Menüs anzeigen', () => {
+        // Arrange
+        render(<ConfigurationPanel config={initialConfig} setConfig={() => {}} />);
+
+        // Assert: Überprüfe Bandit-Typ Optionen
+        const banditSelect = document.getElementById('banditType');
+        expect(banditSelect.querySelector('option[value="bernoulli"]')).toBeInTheDocument();
+        expect(banditSelect.querySelector('option[value="gaussian"]')).toBeInTheDocument();
+
+        // Überprüfe Algorithmus Optionen
+        const algorithmSelect = document.getElementById('algorithm');
+        expect(algorithmSelect.querySelector('option[value="greedy"]')).toBeInTheDocument();
+        expect(algorithmSelect.querySelector('option[value="epsilon-greedy"]')).toBeInTheDocument();
+        expect(algorithmSelect.querySelector('option[value="random"]')).toBeInTheDocument();
     });
 });

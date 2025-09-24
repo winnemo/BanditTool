@@ -5,7 +5,9 @@
     gap: 2rem;
 
     .header-container {
-
+        align-self: center;
+        max-width: max-content;
+        padding: 1rem 2rem 1rem 2rem;
         text-align: center;
         border-radius: 1rem;
         border: 1px solid white;
@@ -16,13 +18,16 @@
     }
 
     .content-container {
-        /*display: flex;*/
+        display: flex;
+        flex-direction: row;
+        gap: 2rem;
 
         .configuration-container {
             padding: 2rem;
             border-radius: 1rem;
             border: 1px solid white;
-
+            max-height: max-content;
+            max-width: max-content;
         }
         .output-container {
             display: grid;

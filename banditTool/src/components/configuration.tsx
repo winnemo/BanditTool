@@ -1,5 +1,3 @@
-import React from 'react';
-// Die Icons werden aktuell nicht verwendet, können aber drin bleiben
 import "./configuration.css";
 
 const ConfigurationPanel = ({ config, setConfig }) => {
@@ -51,7 +49,6 @@ const ConfigurationPanel = ({ config, setConfig }) => {
                             onChange={(e) =>
                                 setConfig({...config, numIterations: parseInt(e.target.value, 10)})
                             }
-                            aria-labelledby="numIterations-number" // Hilft Screenreadern
                         />
                         <input
                             id="numIterations-number"
