@@ -6,8 +6,8 @@
 
      }
 .header-container {
-    position: sticky;
-
+    /*position: sticky;*/
+    flex-shrink: 0;
     align-self: center;
     max-width: max-content;
     padding: 1rem 2rem 1rem 2rem;
@@ -21,7 +21,7 @@
 }
 
 .content-container {
-    position: relative;
+    flex-grow: 1;
     display: flex;
     flex-direction: row;
     gap: 2rem;
