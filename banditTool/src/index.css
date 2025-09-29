@@ -1,27 +1,33 @@
 :root {
   font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
 
-
   color-scheme: light;
+  overflow-x: hidden;
+  scrollbar-width: none;
+  background-color:  #f9fafb;
+  min-width: 100vw;
 
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
-
+:root::-webkit-scrollbar {
+  display: none;
+}
 body {
   margin: 0;
+  padding: 0;
   display: flex;
   place-items: start;
   justify-content: center;
 
-  min-width: 100vw;
-  min-height: 100vh;
+  width: 100%;
+  height: 100%;
   font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', sans-serif;
 
 
-  color: white;
+  color:  #f9fafb;
   line-height: 2;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
