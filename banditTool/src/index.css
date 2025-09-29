@@ -5,7 +5,6 @@
   overflow-x: hidden;
   scrollbar-width: none;
   background-color:  #f9fafb;
-  min-width: 100vw;
 
   font-synthesis: none;
   text-rendering: optimizeLegibility;
@@ -21,9 +20,6 @@ body {
   display: flex;
   place-items: start;
   justify-content: center;
-
-  width: 100%;
-  height: 100%;
   font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', sans-serif;
 
 
