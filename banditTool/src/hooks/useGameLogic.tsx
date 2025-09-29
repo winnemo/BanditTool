@@ -14,6 +14,15 @@ export const useGameLogic = (config) => {
 
     const [drugProbabilities, setDrugProbabilities] = useState([]);
     const [algorithmPerformance, setAlgorithmPerformance] = useState([]);
+    const [notification, setNotification] = useState(null);
+
+    // 💡 NEU: Zustand für die letzte Algorithmus-Aktion
+    const [algorithmState, setAlgorithmState] = useState({
+        choice: null,
+        success: null,
+        stats: initializeDrugStats(config.numActions) // Algorithmus-Statistiken separat halten
+    });
+
 
     // Initialize drug probabilities when config changes
     useEffect(() => {
@@ -30,36 +39,75 @@ export const useGameLogic = (config) => {
             showPlot: false
         });
 
+        // Reset Algorithmus-State
+        setAlgorithmState({
+            choice: null,
+            success: null,
+            stats: initializeDrugStats(config.numActions)
+        });
+
         setAlgorithmPerformance([]);
+        setNotification(null);
     }, [config.numActions, config.banditType]);
 
+    // Prüfen, ob die maximale Anzahl an Versuchen erreicht ist
+    const isMaxAttemptsReached = gameState.currentPatient >= config.numIterations;
+
     const handleDrugChoice = (drugIndex) => {
-        if (!gameState.isPlaying || gameState.currentPatient >= config.numIterations) return;
+        if (!gameState.isPlaying) {
+            setNotification("Bitte starten Sie das Spiel zuerst.");
+            return;
+        }
+
+        if (isMaxAttemptsReached) {
+            setNotification("Maximale Anzahl an Versuchen erreicht! Bitte klicken Sie auf 'Spiel abbrechen', um die Ergebnisse zu sehen.");
+            return;
+        }
+
+        // Benachrichtigung bei erfolgreichem Klick zurücksetzen
+        setNotification(null);
 
         const success = simulateDrugOutcome(drugIndex, drugProbabilities, config.banditType);
         const newSavedLives = gameState.savedLives + (success ? 1 : 0);
         const newCurrentPatient = gameState.currentPatient + 1;
 
-        // Update drug stats
-        const newDrugStats = { ...gameState.drugStats };
+        // 1. UPDATE EIGENE STATS
+        const newDrugStats = {...gameState.drugStats};
         newDrugStats[`drug${drugIndex}`].attempts++;
         if (success) newDrugStats[`drug${drugIndex}`].successes++;
 
-        // Update game data for plotting
+        // 2. SIMULIERE ALGORITHMUS-SCHRITT
+        const algorithmStats = {...algorithmState.stats};
+        const algorithmChoice = algorithms[config.algorithm](algorithmStats, config.numActions);
+        const algorithmSuccess = simulateDrugOutcome(algorithmChoice, drugProbabilities, config.banditType);
+
+        // 3. UPDATE ALGORITHMUS-STATS
+        algorithmStats[`drug${algorithmChoice}`].attempts++;
+        if (algorithmSuccess) algorithmStats[`drug${algorithmChoice}`].successes++;
+
+        // 4. UPDATE GAME DATA
         const newGameData = [...gameState.gameData, {
             patient: newCurrentPatient,
             savedLives: newSavedLives,
             playerChoice: drugIndex,
-            success: success
+            playerSuccess: success, // Speichere eigenes Ergebnis
+            algorithmChoice: algorithmChoice, // Speichere Algorithmus-Wahl
+            algorithmSuccess: algorithmSuccess // Speichere Algorithmus-Ergebnis
         }];
 
-        setGameState({
-            ...gameState,
+        // 5. SET NEW STATES
+        setGameState(prev => ({
+            ...prev,
             currentPatient: newCurrentPatient,
             savedLives: newSavedLives,
             gameData: newGameData,
             drugStats: newDrugStats,
-            isPlaying: newCurrentPatient < config.numIterations
+        }));
+
+        setAlgorithmState({
+            choice: algorithmChoice,
+            success: algorithmSuccess,
+            stats: algorithmStats // Wichtig: Stats für nächsten Algo-Schritt speichern
         });
     };
 
@@ -73,40 +121,37 @@ export const useGameLogic = (config) => {
             showPlot: false
         });
         setAlgorithmPerformance([]);
+        setNotification(null);
+    };
+
+    const stopGame = () => {
+        setGameState({...gameState, isPlaying: false});
+        setNotification(null);
     };
 
     const runAlgorithmSimulation = () => {
-        const algorithmData = [];
+        // Diese Funktion wird nur für den Plot verwendet, wenn das Spiel beendet ist
+        // Wir können hier einfach die gesammelten Daten verwenden und die Ergebnisse extrapolieren.
+        // Für den Plot ist es am besten, die Daten aus dem gameData zu nutzen.
+
+        // Da wir die Algorithmus-Ergebnisse jetzt in Echtzeit in gameData speichern,
+        // müssen wir sie hier nur noch für das Plot-Format aufbereiten.
         let algorithmSavedLives = 0;
-        const algorithmDrugStats = initializeDrugStats(config.numActions);
-
-        for (let patient = 0; patient < config.numIterations; patient++) {
-            const drugChoice = patient < config.numActions
-                ? patient % config.numActions
-                : algorithms[config.algorithm](algorithmDrugStats, config.numActions);
-
-            const success = simulateDrugOutcome(drugChoice, drugProbabilities, config.banditType);
-
-            algorithmSavedLives += success ? 1 : 0;
-            algorithmDrugStats[`drug${drugChoice}`].attempts++;
-            if (success) algorithmDrugStats[`drug${drugChoice}`].successes++;
-
-            algorithmData.push({
-                patient: patient + 1,
-                algorithmSavedLives,
-                algorithmChoice: drugChoice
-            });
-        }
-
-        return algorithmData;
+        return gameState.gameData.map(data => {
+            algorithmSavedLives += data.algorithmSuccess ? 1 : 0;
+            return {
+                patient: data.patient,
+                algorithmSavedLives: algorithmSavedLives,
+                algorithmChoice: data.algorithmChoice
+            };
+        });
     };
 
     const showPlot = () => {
         const algorithmData = runAlgorithmSimulation();
 
-        // Combine player and algorithm data
         const combinedData = [];
-        for (let i = 0; i < Math.max(gameState.gameData.length, algorithmData.length); i++) {
+        for (let i = 0; i < gameState.gameData.length; i++) {
             combinedData.push({
                 patient: i + 1,
                 playerSavedLives: gameState.gameData[i]?.savedLives || 0,
@@ -115,17 +160,24 @@ export const useGameLogic = (config) => {
         }
 
         setAlgorithmPerformance(combinedData);
-        setGameState({ ...gameState, showPlot: true });
+        setGameState({...gameState, showPlot: true});
+        setNotification(null);
+        // ACHTUNG: Der return-Block darf NICHT hier stehen!
     };
 
-    const isGameComplete = !gameState.isPlaying && gameState.currentPatient >= config.numIterations;
+    const isGameComplete = gameState.currentPatient >= config.numIterations;
 
+    // 💡 KORREKTER RETURN-BLOCK AM ENDE DES HOOKS
     return {
         gameState,
         algorithmPerformance,
         handleDrugChoice,
         startGame,
+        stopGame,
         showPlot,
-        isGameComplete
+        isGameComplete,
+        isMaxAttemptsReached,
+        notification,
+        algorithmState // 💡 Neuer State zurückgegeben
     };
 };

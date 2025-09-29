@@ -1,5 +1,62 @@
-.action-button {
+/* Game Area Styles */
+.beans-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
     gap: 1rem;
+}
+
+@media (min-width: 768px) {
+    .beans-grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}
+
+@media (min-width: 1024px) {
+    .beans-grid {
+        grid-template-columns: repeat(4, 1fr);
+    }
+}
+
+.game-info-small {
+    font-size: 0.875rem;
+    /* 💡 Hinzugefügte Textfarbe */
+    color: #6b7280;
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.game-area p {
+    color: #4b5563;
+}
+
+.bean-button {
+    height: 5rem;
+    background-color: #fef3c7;
+    color: #92400e;
+    border: 2px solid #fcd34d;
+    border-radius: 0.375rem;
+    cursor: pointer;
+    transition: all 0.2s;
     display: flex;
     flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.25rem;
+    font-weight: 500;
+}
+
+.bean-button:hover {
+    background-color: #fde68a;
+    border-color: #f59e0b;
+    transform: scale(1.05);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+.bean-emoji {
+    font-size: 1.5rem;
+}
+
+.bean-text {
+    font-size: 0.875rem;
 }

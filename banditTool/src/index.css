@@ -2,7 +2,7 @@
   font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
 
 
-  color-scheme: light dark;
+  color-scheme: light;
 
   font-synthesis: none;
   text-rendering: optimizeLegibility;
@@ -21,7 +21,7 @@ body {
   font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', sans-serif;
 
 
-  color: white;  /* Shriftfarbe */
+  color: white;
   line-height: 2;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
