@@ -1,15 +1,32 @@
+// Importiert notwendige Icons aus der 'lucide-react' Bibliothek und das zugehörige CSS-Styling.
 import { Settings, Coffee, RotateCcw, Play, AlertCircle } from 'lucide-react';
 import "./configuration.css";
 
+/**
+ * Eine React-Komponente, die ein Konfigurationspanel für ein "Multi-Armed Bandit"-Spiel anzeigt.
+ * Sie ermöglicht es dem Benutzer, verschiedene Parameter wie den Bandit-Typ, die Anzahl der Aktionen
+ * und Iterationen sowie den Algorithmus einzustellen und das Spiel zu starten/stoppen.
+ *
+ * @param {object} props - Die Eigenschaften der Komponente.
+ * @param {object} props.config - Das aktuelle Konfigurationsobjekt.
+ * @param {function} props.setConfig - Funktion zum Aktualisieren des Konfigurationsobjekts.
+ * @param {function} props.onStartGame - Callback-Funktion zum Starten des Spiels.
+ * @param {function} props.onStopGame - Callback-Funktion zum Stoppen des Spiels.
+ * @param {boolean} props.gameStarted - Flag, das angibt, ob das Spiel gerade läuft.
+ * @returns {JSX.Element} Das gerenderte Konfigurationspanel.
+ */
 const ConfigurationPanel = ({ config, setConfig, onStartGame, onStopGame, gameStarted }) => {
 
-    // Handler für Änderungen an den Sliders und Number-Inputs
+    // Handler-Funktion für Änderungen am Slider/Input für die Anzahl der Aktionen ("Bohnen").
+    // Stellt sicher, dass der Wert eine gültige Zahl im Bereich von 1 bis 10 ist.
     const handleNumActionsChange = (value) => {
         if (!isNaN(value) && value >= 1 && value <= 10) {
             setConfig({ ...config, numActions: value });
         }
     };
 
+    // Handler-Funktion für Änderungen am Slider/Input für die Anzahl der Iterationen ("Versuche").
+    // Stellt sicher, dass der Wert eine gültige Zahl im Bereich von 1 bis 50 ist.
     const handleNumIterationsChange = (value) => {
         if (!isNaN(value) && value >= 1 && value <= 50) {
             setConfig({ ...config, numIterations: value });
@@ -18,6 +35,7 @@ const ConfigurationPanel = ({ config, setConfig, onStartGame, onStopGame, gameSt
 
     return (
         <div className="card">
+            {/* Kopfzeile des Panels */}
             <div className="card-header">
                 <h2 className="card-title">
                     <Settings className="config-icon" />
@@ -27,7 +45,7 @@ const ConfigurationPanel = ({ config, setConfig, onStartGame, onStopGame, gameSt
             <div className="card-content">
                 <div className="config-section">
 
-                    {/* Bandit-Typ */}
+                    {/* Konfigurationspunkt: Bandit-Typ */}
                     <div className="config-item">
                         <label className="config-label">
                             📊 Bandit-Typ
@@ -42,19 +60,20 @@ const ConfigurationPanel = ({ config, setConfig, onStartGame, onStopGame, gameSt
                                 <option value="gaussian">Gaussian</option>
                             </select>
                         </div>
+                        {/* Dynamischer Hilfetext, der den ausgewählten Bandit-Typ erklärt */}
                         <p className="help-text">
                             {config.banditType === 'bernoulli'
                                 ? 'Binäre Belohnungen: Jede Kaffeebohne gibt entweder 0 oder 1 Punkt.'
-                                : 'Kontinuierliche Belohnungen: Jede Kaffeebohne gibt Punkte aus einer Normalverteilung.'
+                                : 'Kontinuierliche Belohnungen: Jede Kaffeebohne gibt Punkte aus einer Normalverteilung von 0 bis 10 Punkten.'
                             }
                         </p>
                     </div>
 
-                {/* Anzahl Aktionen (Medikamente / Bohnen) */}
-                <div className="config-item">
-                    <label className="config-label">
-                        <Coffee className="config-icon"/>
-                        Anzahl verschiedener Bohnen: {config.numActions}
+                    {/* Konfigurationspunkt: Anzahl der Aktionen (Bohnen) */}
+                    <div className="config-item">
+                        <label className="config-label">
+                            <Coffee className="config-icon"/>
+                            Anzahl verschiedener Bohnen: {config.numActions}
                         </label>
                         <div className="slider-container">
                             <div className="slider-wrapper">
@@ -72,6 +91,7 @@ const ConfigurationPanel = ({ config, setConfig, onStartGame, onStopGame, gameSt
                                     <span>10</span>
                                 </div>
                             </div>
+                            {/* Zusätzliches Nummern-Input für präzise Eingaben */}
                             <input
                                 type="number"
                                 className="number-input"
@@ -83,7 +103,7 @@ const ConfigurationPanel = ({ config, setConfig, onStartGame, onStopGame, gameSt
                         </div>
                     </div>
 
-                    {/* Anzahl Iterationen (Patienten / Versuche) */}
+                    {/* Konfigurationspunkt: Anzahl der Iterationen (Versuche) */}
                     <div className="config-item">
                         <label className="config-label">
                             <RotateCcw className="config-icon" />
@@ -117,7 +137,7 @@ const ConfigurationPanel = ({ config, setConfig, onStartGame, onStopGame, gameSt
                         </div>
                     </div>
 
-                    {/* Hinweis-Text */}
+                    {/* Ein kleiner Hinweis-Text für den Benutzer */}
                     <div className="config-separator">
                         <p className="tip-text">
                             <span className="tip-emoji">💡</span>
@@ -125,7 +145,7 @@ const ConfigurationPanel = ({ config, setConfig, onStartGame, onStopGame, gameSt
                         </p>
                     </div>
 
-                    {/* Algorithmus-Auswahl */}
+                    {/* Konfigurationspunkt: Algorithmus-Auswahl */}
                     <div className="config-item">
                         <label className="config-label">
                             <AlertCircle className="config-icon" />
@@ -145,13 +165,14 @@ const ConfigurationPanel = ({ config, setConfig, onStartGame, onStopGame, gameSt
                         </div>
                     </div>
 
-                    {/* Buttons Start/Stop */}
+                    {/* Container für die Start/Stop-Aktionsbuttons */}
                     <div className="button-container">
                         <button
                             className={`button button-start ${gameStarted ? 'disabled' : ''}`}
                             onClick={onStartGame}
-                            disabled={gameStarted}
+                            disabled={gameStarted} // Button wird deaktiviert, wenn das Spiel läuft
                         >
+                            {/* Bedingte Anzeige: Text ändert sich, je nachdem ob das Spiel läuft */}
                             {gameStarted ? (
                                 <>
                                     <div className="spin-animation">⚡</div>
@@ -165,12 +186,12 @@ const ConfigurationPanel = ({ config, setConfig, onStartGame, onStopGame, gameSt
                             )}
                         </button>
 
+                        {/* Der "Spiel abbrechen"-Button wird nur gerendert, wenn das Spiel gestartet ist */}
                         {gameStarted && (
                             <button
                                 className="button button-stop"
                                 onClick={onStopGame}
                             >
-
                                 🛑 Spiel abbrechen
                             </button>
                         )}
