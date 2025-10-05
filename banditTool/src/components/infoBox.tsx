@@ -1,10 +1,19 @@
+// Importiert verschiedene Icons aus der lucide-react Bibliothek zur visuellen Untermalung.
 import { Coffee, Target, Trophy, Zap } from 'lucide-react';
+// Importiert das zugehörige Stylesheet für die Komponente.
 import './infoBox.css'
 
+/**
+ * Eine statische React-Komponente, die als Willkommens- und Informationsbox dient.
+ * Sie erklärt dem Benutzer das Szenario und die Ziele des Spiels.
+ *
+ * @returns {JSX.Element} Die gerenderte InfoBox-Komponente.
+ */
 export function InfoBox() {
     return (
         <div className="card">
             <div className="card-content">
+                {/* Header-Bereich der Info-Box */}
                 <div className="info-header">
                     <h2 className="info-title">
                         <Coffee className="config-icon" />
@@ -14,6 +23,7 @@ export function InfoBox() {
                 </div>
 
                 <div className="info-content">
+                    {/* Erster Absatz: Die narrative Einleitung in die Story. */}
                     <div className="info-paragraph">
                         <div className="info-emoji">🧠</div>
                         <p>
@@ -24,6 +34,7 @@ export function InfoBox() {
                         </p>
                     </div>
 
+                    {/* Zweiter Absatz: Die Erklärung des technischen Hintergrunds (Multi-Armed Bandit). */}
                     <div className="info-paragraph">
                         <div className="info-emoji">🕹️</div>
                         <p>
@@ -32,12 +43,14 @@ export function InfoBox() {
                         </p>
                     </div>
 
+                    {/* Eine separate, hervorgehobene Box, die die Mission des Spielers definiert. */}
                     <div className="mission-box">
                         <h3 className="mission-title">
                             <Target className="config-icon" />
                             Deine Mission:
                         </h3>
                         <div className="mission-content">
+                            {/* Missionsziel 1: Testen der Bohnen */}
                             <div className="mission-item">
                                 <div className="info-emoji">🧪</div>
                                 <div>
@@ -46,6 +59,7 @@ export function InfoBox() {
                                 </div>
                             </div>
 
+                            {/* Missionsziel 2: Maximieren der Punkte */}
                             <div className="mission-item">
                                 <Trophy className="mission-icon trophy" />
                                 <div>
@@ -55,6 +69,7 @@ export function InfoBox() {
                                 </div>
                             </div>
 
+                            {/* Missionsziel 3: Besser sein als die Algorithmen */}
                             <div className="mission-item">
                                 <Zap className="mission-icon zap" />
                                 <div>

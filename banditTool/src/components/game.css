@@ -19,7 +19,6 @@
 
 .game-info-small {
     font-size: 0.875rem;
-    /* 💡 Hinzugefügte Textfarbe */
     color: #6b7280;
     display: flex;
     align-items: center;
@@ -59,4 +58,8 @@
 
 .bean-text {
     font-size: 0.875rem;
+}
+
+.card{
+    color: #1a1a1a;
 }

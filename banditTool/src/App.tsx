@@ -7,8 +7,12 @@ import PerformanceChart from './components/performanceChart';
 import { useGameLogic } from './hooks/useGameLogic';
 import "./App.css";
 
+/**
+ * Die Hauptkomponente der Multi-Armed Bandit Anwendung.
+ * Sie orchestriert den Zustand und setzt alle UI-Komponenten zusammen.
+ */
 const MultiArmedBanditApp = () => {
-    // Configuration state
+    // 1. Zustand für die Spielkonfiguration. Wird hier gehalten und nach unten weitergegeben.
     const [config, setConfig] = useState({
         numActions: 5,
         numIterations: 10,
@@ -16,31 +20,34 @@ const MultiArmedBanditApp = () => {
         algorithm: 'greedy'
     });
 
-    // 💡 1. Ref für den Spielbereich definieren
+    // 2. Ein Ref, um eine Referenz auf das DOM-Element des Spielbereichs zu erhalten.
     const gameAreaRef = useRef(null);
 
+    // 3. Aufruf des Custom Hooks, der die gesamte Spiellogik und den Spielzustand verwaltet.
     const {
         gameState,
         algorithmPerformance,
         handleDrugChoice,
-        startGame: startLogic,
+        startGame: startLogic, // startLogic ist die originale Start-Funktion aus dem Hook
         stopGame,
-        showPlot,
         isGameComplete,
-        notification
+        notification,
+        algorithmState
     } = useGameLogic(config);
 
+    /**
+     * Eine Wrapper-Funktion, die das Spiel startet UND danach zum Spielbereich scrollt.
+     */
     const startGameAndScroll = () => {
-        // Zuerst die Spiellogik starten (setzt isPlaying auf true)
+        // Zuerst die Logik zum Starten des Spiels aufrufen.
         startLogic();
 
-        // Dann mit einer kleinen Verzögerung zum Spielbereich scrollen
-        // Die Verzögerung ist notwendig, damit React das GameInterface rendern kann,
-        // bevor versucht wird, dorthin zu scrollen.
+        // Mit einer kleinen Verzögerung wird zum Spielbereich gescrollt.
+        // Die Verzögerung gibt React Zeit, das GameInterface zu rendern.
         setTimeout(() => {
             gameAreaRef.current?.scrollIntoView({
                 behavior: 'smooth',
-                block: 'start', // Scrollt zum oberen Rand des Elements
+                block: 'start',
             });
         }, 100);
     };
@@ -53,17 +60,19 @@ const MultiArmedBanditApp = () => {
 
                 <div className="content-container">
                     <div className="configuration-container">
+                        {/* Die Konfigurations-Komponente erhält Props, um den Zustand zu lesen und zu ändern. */}
                         <ConfigurationPanel
                             config={config}
                             setConfig={setConfig}
-                            onStartGame={startGameAndScroll}
+                            onStartGame={startGameAndScroll} // Die Scroll-Funktion wird hier übergeben
                             onStopGame={stopGame}
                             gameStarted={gameState.isPlaying}
                         />
                     </div>
 
+                    {/* Bedingtes Rendern: Der Spiel- und Chart-Bereich wird nur angezeigt, wenn das Spiel läuft. */}
                     {gameState.isPlaying && (
-                        // 💡 3. Ref an den Container binden
+                        // Das Ref wird an diesen Container gebunden, damit wir zu ihm scrollen können.
                         <div className="output-container" ref={gameAreaRef}>
                             <GameInterface
                                 gameState={gameState}
@@ -71,11 +80,11 @@ const MultiArmedBanditApp = () => {
                                 onDrugChoice={handleDrugChoice}
                                 isGameComplete={isGameComplete}
                                 notification={notification}
+                                algorithmState={algorithmState}
                             />
                             <PerformanceChart
                                 algorithmPerformance={algorithmPerformance}
                                 config={config}
-                                isVisible={gameState.showPlot}
                             />
                         </div>
                     )}
