@@ -29,14 +29,14 @@
     max-width: max-content;
 }
 .output-container {
-    display: grid;
-    padding: 2rem;
-    border-radius: 1rem;
-    /*flex-grow: 1;*/
-    /*display: flex;*/
-    /*flex-direction: row;*/
-    /*gap: 2rem;*/
-    /*padding: 0;*/
+    /*display: grid;*/
+    /*padding: 2rem;*/
+    /*border-radius: 1rem;*/
+    flex-grow: 1;
+    display: flex;
+    flex-direction: row;
+    gap: 2rem;
+    padding: 0;
 }
 
 
