@@ -1,143 +1,400 @@
-import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
-import { describe, test, expect, vi } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import '@testing-library/jest-dom';
+import ConfigurationPanel from "../components/configuration.tsx";
 
-// Die zu testende Komponente importieren
-import ConfigurationPanel from '../components/configuration.tsx';
-
-// Eine Gruppe von Tests für die ConfigurationPanel-Komponente
 describe('ConfigurationPanel', () => {
+    const mockSetConfig = vi.fn();
+    const mockOnStartGame = vi.fn();
+    const mockOnStopGame = vi.fn();
 
-    // Ein Standard-Konfigurationsobjekt für die Tests
-    const initialConfig = {
-        numActions: 10,
-        numIterations: 100,
+    const defaultConfig = {
         banditType: 'bernoulli',
-        algorithm: 'greedy',
+        numActions: 5,
+        numIterations: 10,
+        algorithm: 'greedy'
     };
 
-    // Testfall 1: Überprüft, ob die Komponente mit den Startwerten korrekt angezeigt wird.
-    test('sollte mit initialen Werten korrekt rendern', () => {
-        // Arrange: Rendere die Komponente mit den Start-Props
-        render(<ConfigurationPanel config={initialConfig} setConfig={() => {}} />);
-
-        // Assert: Überprüfe, ob die Elemente auf dem Bildschirm sind und die richtigen Werte haben
-        expect(screen.getByRole('heading', { name: /konfiguration/i })).toBeInTheDocument();
-
-        // Überprüfe die spezifischen Input-Elemente anhand ihrer IDs
-        const numActionsNumber = document.getElementById('numActions-number');
-        const numActionsRange = document.getElementById('numActions-range');
-        const numIterationsNumber = document.getElementById('numIterations-number');
-        const numIterationsRange = document.getElementById('numIterations-range');
-        const banditTypeSelect = document.getElementById('banditType');
-        const algorithmSelect = document.getElementById('algorithm');
-
-        expect(numActionsNumber).toHaveValue(10);
-        expect(numActionsRange).toHaveValue('10');
-        expect(numIterationsNumber).toHaveValue(100);
-        expect(numIterationsRange).toHaveValue('100');
-        expect(banditTypeSelect).toHaveValue('bernoulli');
-        expect(algorithmSelect).toHaveValue('greedy');
+    beforeEach(() => {
+        vi.clearAllMocks();
     });
 
-    // Testfall 2: Überprüft, ob das Ändern der Anzahl Medikamente (Number Input) funktioniert
-    test('sollte setConfig aufrufen, wenn die Anzahl der Medikamente per Zahleneingabe geändert wird', () => {
-        // Arrange
-        const mockSetConfig = vi.fn();
-        render(<ConfigurationPanel config={initialConfig} setConfig={mockSetConfig} />);
+    describe('Rendering', () => {
+        it('sollte die Hauptüberschrift rendern', () => {
+            render(
+                <ConfigurationPanel
+                    config={defaultConfig}
+                    setConfig={mockSetConfig}
+                    onStartGame={mockOnStartGame}
+                    onStopGame={mockOnStopGame}
+                    gameStarted={false}
+                />
+            );
 
-        // Act: Finde das spezifische Number-Input anhand seiner ID
-        const drugNumberInput = document.getElementById('numActions-number');
-        fireEvent.change(drugNumberInput, { target: { value: '25' } });
+            expect(screen.getByText('Spiel-Konfiguration')).toBeInTheDocument();
+        });
 
-        // Assert
-        expect(mockSetConfig).toHaveBeenCalledWith({ ...initialConfig, numActions: 25 });
+        it('sollte alle Konfigurationsoptionen anzeigen', () => {
+            render(
+                <ConfigurationPanel
+                    config={defaultConfig}
+                    setConfig={mockSetConfig}
+                    onStartGame={mockOnStartGame}
+                    onStopGame={mockOnStopGame}
+                    gameStarted={false}
+                />
+            );
+
+            expect(screen.getByText(/Bandit-Typ/)).toBeInTheDocument();
+            expect(screen.getByText(/Anzahl verschiedener Bohnen/)).toBeInTheDocument();
+            expect(screen.getByText(/Anzahl Versuche/)).toBeInTheDocument();
+            expect(screen.getByText(/Algorithmus/)).toBeInTheDocument();
+        });
+
+        it('sollte den Start-Button anzeigen wenn Spiel nicht läuft', () => {
+            render(
+                <ConfigurationPanel
+                    config={defaultConfig}
+                    setConfig={mockSetConfig}
+                    onStartGame={mockOnStartGame}
+                    onStopGame={mockOnStopGame}
+                    gameStarted={false}
+                />
+            );
+
+            expect(screen.getByText('Spiel starten!')).toBeInTheDocument();
+        });
+
+        it('sollte den Stop-Button anzeigen wenn Spiel läuft', () => {
+            render(
+                <ConfigurationPanel
+                    config={defaultConfig}
+                    setConfig={mockSetConfig}
+                    onStartGame={mockOnStartGame}
+                    onStopGame={mockOnStopGame}
+                    gameStarted={true}
+                />
+            );
+
+            expect(screen.getByText(/Spiel läuft/)).toBeInTheDocument();
+            expect(screen.getByText(/Spiel abbrechen/)).toBeInTheDocument();
+        });
     });
 
-    // Testfall 3: Überprüft, ob das Ändern des Medikamente-Sliders funktioniert
-    test('sollte setConfig aufrufen, wenn der Medikamente-Slider geändert wird', () => {
-        // Arrange
-        const mockSetConfig = vi.fn();
-        render(<ConfigurationPanel config={initialConfig} setConfig={mockSetConfig} />);
+    describe('Bandit-Typ Auswahl', () => {
+        it('sollte den korrekten Bandit-Typ anzeigen', () => {
+            render(
+                <ConfigurationPanel
+                    config={defaultConfig}
+                    setConfig={mockSetConfig}
+                    onStartGame={mockOnStartGame}
+                    onStopGame={mockOnStopGame}
+                    gameStarted={false}
+                />
+            );
 
-        // Act: Finde den Range-Input anhand seiner ID
-        const drugSlider = document.getElementById('numActions-range');
-        fireEvent.change(drugSlider, { target: { value: '30' } });
+            const select = screen.getByDisplayValue('Bernoulli');
+            expect(select).toBeInTheDocument();
+        });
 
-        // Assert
-        expect(mockSetConfig).toHaveBeenCalledWith({ ...initialConfig, numActions: 30 });
+        it('sollte setConfig aufrufen beim Ändern des Bandit-Typs', () => {
+            render(
+                <ConfigurationPanel
+                    config={defaultConfig}
+                    setConfig={mockSetConfig}
+                    onStartGame={mockOnStartGame}
+                    onStopGame={mockOnStopGame}
+                    gameStarted={false}
+                />
+            );
+
+            const select = screen.getByDisplayValue('Bernoulli');
+            fireEvent.change(select, { target: { value: 'gaussian' } });
+
+            expect(mockSetConfig).toHaveBeenCalledWith({
+                ...defaultConfig,
+                banditType: 'gaussian'
+            });
+        });
+
+        it('sollte den korrekten Hilfetext für Bernoulli anzeigen', () => {
+            render(
+                <ConfigurationPanel
+                    config={defaultConfig}
+                    setConfig={mockSetConfig}
+                    onStartGame={mockOnStartGame}
+                    onStopGame={mockOnStopGame}
+                    gameStarted={false}
+                />
+            );
+
+            expect(screen.getByText(/Binäre Belohnungen/)).toBeInTheDocument();
+        });
+
+        it('sollte den korrekten Hilfetext für Gaussian anzeigen', () => {
+            const gaussianConfig = { ...defaultConfig, banditType: 'gaussian' };
+
+            render(
+                <ConfigurationPanel
+                    config={gaussianConfig}
+                    setConfig={mockSetConfig}
+                    onStartGame={mockOnStartGame}
+                    onStopGame={mockOnStopGame}
+                    gameStarted={false}
+                />
+            );
+
+            expect(screen.getByText(/Kontinuierliche Belohnungen/)).toBeInTheDocument();
+        });
     });
 
-    // Testfall 4: Überprüft, ob das Ändern der Patienten-Anzahl (Number Input) funktioniert
-    test('sollte setConfig aufrufen, wenn die Patienten-Anzahl per Zahleneingabe geändert wird', () => {
-        // Arrange
-        const mockSetConfig = vi.fn();
-        render(<ConfigurationPanel config={initialConfig} setConfig={mockSetConfig} />);
+    describe('Anzahl Aktionen (Bohnen)', () => {
+        it('sollte den aktuellen Wert anzeigen', () => {
+            render(
+                <ConfigurationPanel
+                    config={defaultConfig}
+                    setConfig={mockSetConfig}
+                    onStartGame={mockOnStartGame}
+                    onStopGame={mockOnStopGame}
+                    gameStarted={false}
+                />
+            );
 
-        // Act: Finde den Number-Input anhand seiner ID
-        const patientNumberInput = document.getElementById('numIterations-number');
-        fireEvent.change(patientNumberInput, { target: { value: '750' } });
+            expect(screen.getByText(/Anzahl verschiedener Bohnen: 5/)).toBeInTheDocument();
+        });
 
-        // Assert
-        expect(mockSetConfig).toHaveBeenCalledWith({ ...initialConfig, numIterations: 750 });
+        it('sollte setConfig beim Ändern des Sliders aufrufen', () => {
+            render(
+                <ConfigurationPanel
+                    config={defaultConfig}
+                    setConfig={mockSetConfig}
+                    onStartGame={mockOnStartGame}
+                    onStopGame={mockOnStopGame}
+                    gameStarted={false}
+                />
+            );
+
+            const slider = screen.getAllByRole('slider')[0];
+            fireEvent.change(slider, { target: { value: '7' } });
+
+            expect(mockSetConfig).toHaveBeenCalledWith({
+                ...defaultConfig,
+                numActions: 7
+            });
+        });
+
+        it('sollte setConfig beim Ändern des Number-Inputs aufrufen', () => {
+            render(
+                <ConfigurationPanel
+                    config={defaultConfig}
+                    setConfig={mockSetConfig}
+                    onStartGame={mockOnStartGame}
+                    onStopGame={mockOnStopGame}
+                    gameStarted={false}
+                />
+            );
+
+            const numberInputs = screen.getAllByRole('spinbutton');
+            const actionsInput = numberInputs[0];
+            fireEvent.change(actionsInput, { target: { value: '8' } });
+
+            expect(mockSetConfig).toHaveBeenCalledWith({
+                ...defaultConfig,
+                numActions: 8
+            });
+        });
+
+        it('sollte Werte außerhalb des Bereichs ignorieren (zu klein)', () => {
+            render(
+                <ConfigurationPanel
+                    config={defaultConfig}
+                    setConfig={mockSetConfig}
+                    onStartGame={mockOnStartGame}
+                    onStopGame={mockOnStopGame}
+                    gameStarted={false}
+                />
+            );
+
+            const numberInputs = screen.getAllByRole('spinbutton');
+            const actionsInput = numberInputs[0];
+            fireEvent.change(actionsInput, { target: { value: '0' } });
+
+            expect(mockSetConfig).not.toHaveBeenCalled();
+        });
+
+        it('sollte Werte außerhalb des Bereichs ignorieren (zu groß)', () => {
+            render(
+                <ConfigurationPanel
+                    config={defaultConfig}
+                    setConfig={mockSetConfig}
+                    onStartGame={mockOnStartGame}
+                    onStopGame={mockOnStopGame}
+                    gameStarted={false}
+                />
+            );
+
+            const numberInputs = screen.getAllByRole('spinbutton');
+            const actionsInput = numberInputs[0];
+            fireEvent.change(actionsInput, { target: { value: '11' } });
+
+            expect(mockSetConfig).not.toHaveBeenCalled();
+        });
     });
 
-    // Testfall 6: Überprüft, ob das Ändern des Bandit-Typs funktioniert
-    test('sollte setConfig aufrufen, wenn der Bandit-Typ geändert wird', async () => {
-        // Arrange
-        const mockSetConfig = vi.fn();
-        render(<ConfigurationPanel config={initialConfig} setConfig={mockSetConfig} />);
+    describe('Anzahl Iterationen (Versuche)', () => {
+        it('sollte den aktuellen Wert anzeigen', () => {
+            render(
+                <ConfigurationPanel
+                    config={defaultConfig}
+                    setConfig={mockSetConfig}
+                    onStartGame={mockOnStartGame}
+                    onStopGame={mockOnStopGame}
+                    gameStarted={false}
+                />
+            );
 
-        // Act: Finde das Select-Element anhand seiner ID
-        const banditSelect = document.getElementById('banditType');
-        await userEvent.selectOptions(banditSelect, 'gaussian');
+            expect(screen.getByText(/Anzahl Versuche: 10/)).toBeInTheDocument();
+        });
 
-        // Assert
-        expect(mockSetConfig).toHaveBeenCalledWith({ ...initialConfig, banditType: 'gaussian' });
+        it('sollte setConfig beim Ändern des Sliders aufrufen', () => {
+            render(
+                <ConfigurationPanel
+                    config={defaultConfig}
+                    setConfig={mockSetConfig}
+                    onStartGame={mockOnStartGame}
+                    onStopGame={mockOnStopGame}
+                    gameStarted={false}
+                />
+            );
+
+            const slider = screen.getAllByRole('slider')[1];
+            fireEvent.change(slider, { target: { value: '25' } });
+
+            expect(mockSetConfig).toHaveBeenCalledWith({
+                ...defaultConfig,
+                numIterations: 25
+            });
+        });
+
+        it('sollte Werte außerhalb des Bereichs ignorieren', () => {
+            render(
+                <ConfigurationPanel
+                    config={defaultConfig}
+                    setConfig={mockSetConfig}
+                    onStartGame={mockOnStartGame}
+                    onStopGame={mockOnStopGame}
+                    gameStarted={false}
+                />
+            );
+
+            const numberInputs = screen.getAllByRole('spinbutton');
+            const iterationsInput = numberInputs[1];
+            fireEvent.change(iterationsInput, { target: { value: '51' } });
+
+            expect(mockSetConfig).not.toHaveBeenCalled();
+        });
     });
 
-    // Testfall 7: Überprüft, ob das Ändern des Algorithmus funktioniert
-    test('sollte setConfig aufrufen, wenn der Algorithmus geändert wird', async () => {
-        // Arrange
-        const mockSetConfig = vi.fn();
-        render(<ConfigurationPanel config={initialConfig} setConfig={mockSetConfig} />);
+    describe('Algorithmus Auswahl', () => {
+        it('sollte den korrekten Algorithmus anzeigen', () => {
+            render(
+                <ConfigurationPanel
+                    config={defaultConfig}
+                    setConfig={mockSetConfig}
+                    onStartGame={mockOnStartGame}
+                    onStopGame={mockOnStopGame}
+                    gameStarted={false}
+                />
+            );
 
-        // Act: Finde das Algorithmus-Select anhand seiner ID
-        const algorithmSelect = document.getElementById('algorithm');
-        await userEvent.selectOptions(algorithmSelect, 'epsilon-greedy');
+            const select = screen.getByDisplayValue('Greedy');
+            expect(select).toBeInTheDocument();
+        });
 
-        // Assert
-        expect(mockSetConfig).toHaveBeenCalledWith({ ...initialConfig, algorithm: 'epsilon-greedy' });
+        it('sollte setConfig beim Ändern des Algorithmus aufrufen', () => {
+            render(
+                <ConfigurationPanel
+                    config={defaultConfig}
+                    setConfig={mockSetConfig}
+                    onStartGame={mockOnStartGame}
+                    onStopGame={mockOnStopGame}
+                    gameStarted={false}
+                />
+            );
+
+            const selects = screen.getAllByRole('combobox');
+            const algoSelect = selects[1];
+            fireEvent.change(algoSelect, { target: { value: 'epsilon-greedy' } });
+
+            expect(mockSetConfig).toHaveBeenCalledWith({
+                ...defaultConfig,
+                algorithm: 'epsilon-greedy'
+            });
+        });
     });
 
-    // Testfall 8: Überprüft, ob alle Labels vorhanden sind
-    test('sollte alle erforderlichen Labels anzeigen', () => {
-        // Arrange
-        render(<ConfigurationPanel config={initialConfig} setConfig={() => {}} />);
+    describe('Spiel Steuerung', () => {
+        it('sollte onStartGame aufrufen beim Klick auf Start-Button', () => {
+            render(
+                <ConfigurationPanel
+                    config={defaultConfig}
+                    setConfig={mockSetConfig}
+                    onStartGame={mockOnStartGame}
+                    onStopGame={mockOnStopGame}
+                    gameStarted={false}
+                />
+            );
 
-        // Assert: Überprüfe, ob alle Labels vorhanden sind
-        expect(screen.getByText('Anzahl Medikamente')).toBeInTheDocument();
-        expect(screen.getByText('Anzahl Patienten')).toBeInTheDocument();
-        expect(screen.getByText('Bandit-Typ')).toBeInTheDocument();
-        expect(screen.getByText('Algorithmus')).toBeInTheDocument();
-    });
+            const startButton = screen.getByText('Spiel starten!');
+            fireEvent.click(startButton);
 
-    // Testfall 9: Überprüft, ob alle Optionen in den Select-Elementen vorhanden sind
-    test('sollte alle Optionen in den Dropdown-Menüs anzeigen', () => {
-        // Arrange
-        render(<ConfigurationPanel config={initialConfig} setConfig={() => {}} />);
+            expect(mockOnStartGame).toHaveBeenCalledTimes(1);
+        });
 
-        // Assert: Überprüfe Bandit-Typ Optionen
-        const banditSelect = document.getElementById('banditType');
-        expect(banditSelect.querySelector('option[value="bernoulli"]')).toBeInTheDocument();
-        expect(banditSelect.querySelector('option[value="gaussian"]')).toBeInTheDocument();
+        it('sollte den Start-Button deaktivieren wenn Spiel läuft', () => {
+            render(
+                <ConfigurationPanel
+                    config={defaultConfig}
+                    setConfig={mockSetConfig}
+                    onStartGame={mockOnStartGame}
+                    onStopGame={mockOnStopGame}
+                    gameStarted={true}
+                />
+            );
 
-        // Überprüfe Algorithmus Optionen
-        const algorithmSelect = document.getElementById('algorithm');
-        expect(algorithmSelect.querySelector('option[value="greedy"]')).toBeInTheDocument();
-        expect(algorithmSelect.querySelector('option[value="epsilon-greedy"]')).toBeInTheDocument();
-        expect(algorithmSelect.querySelector('option[value="random"]')).toBeInTheDocument();
+            const startButton = screen.getByText(/Spiel läuft/).closest('button');
+            expect(startButton).toBeDisabled();
+        });
+
+        it('sollte onStopGame aufrufen beim Klick auf Stop-Button', () => {
+            render(
+                <ConfigurationPanel
+                    config={defaultConfig}
+                    setConfig={mockSetConfig}
+                    onStartGame={mockOnStartGame}
+                    onStopGame={mockOnStopGame}
+                    gameStarted={true}
+                />
+            );
+
+            const stopButton = screen.getByText(/Spiel abbrechen/);
+            fireEvent.click(stopButton);
+
+            expect(mockOnStopGame).toHaveBeenCalledTimes(1);
+        });
+
+        it('sollte den Stop-Button nicht anzeigen wenn Spiel nicht läuft', () => {
+            render(
+                <ConfigurationPanel
+                    config={defaultConfig}
+                    setConfig={mockSetConfig}
+                    onStartGame={mockOnStartGame}
+                    onStopGame={mockOnStopGame}
+                    gameStarted={false}
+                />
+            );
+
+            expect(screen.queryByText(/Spiel abbrechen/)).not.toBeInTheDocument();
+        });
     });
 });
