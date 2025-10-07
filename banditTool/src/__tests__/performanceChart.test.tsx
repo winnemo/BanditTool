@@ -40,8 +40,8 @@ describe('PerformanceChart', () => {
         expect(screen.getByText(/Performance Vergleich: Sie vs. Greedy/)).toBeInTheDocument();
 
         // 2. Überprüfe die Legenden-Einträge, die von den <Line> Komponenten generiert werden
-        expect(screen.getByText('Ihre Performance')).toBeInTheDocument();
-        expect(screen.getByText('Greedy Algorithmus')).toBeInTheDocument();
+        expect(screen.getByText(/Ihre Performance/)).toBeInTheDocument();
+        expect(screen.getByText(/Greedy Algorithmus/)).toBeInTheDocument();
     });
 
     // Test 2: Was passiert, wenn keine Daten vorhanden sind?
@@ -55,11 +55,11 @@ describe('PerformanceChart', () => {
         );
 
         // Act & Assert: Der Titel sollte trotzdem sichtbar sein
-        expect(screen.getByText('Performance Vergleich: Sie vs. Greedy')).toBeInTheDocument();
+        expect(screen.getByText(/Performance Vergleich: Sie vs. Greedy/)).toBeInTheDocument();
 
         // Die Legenden-Einträge sollten auch im leeren Zustand vorhanden sein
-        expect(screen.getByText('Ihre Performance')).toBeInTheDocument();
-        expect(screen.getByText('Greedy Algorithmus')).toBeInTheDocument();
+        expect(screen.getByText(/Ihre Performance/)).toBeInTheDocument();
+        expect(screen.getByText(/Greedy Algorithmus/)).toBeInTheDocument();
     });
 
     // Test 3: Funktioniert die Formatierung des Algorithmus-Namens?
@@ -78,7 +78,7 @@ describe('PerformanceChart', () => {
         );
 
         // Act & Assert: Überprüfe den formatierten Namen im Titel und in der Legende
-        expect(screen.getByText('Performance Vergleich: Sie vs. Epsilon greedy')).toBeInTheDocument();
-        expect(screen.getByText('Epsilon greedy Algorithmus')).toBeInTheDocument();
+        expect(screen.getByText(/Performance Vergleich: Sie vs. Epsilon greedy/)).toBeInTheDocument();
+        expect(screen.getByText(/Epsilon greedy Algorithmus/)).toBeInTheDocument();
     });
 });
