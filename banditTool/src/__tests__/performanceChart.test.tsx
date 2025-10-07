@@ -37,7 +37,7 @@ describe('PerformanceChart', () => {
 
         // Act & Assert: Überprüfen, ob die Texte im Dokument sichtbar sind
         // 1. Überprüfe den Titel
-        expect(screen.getByText('Performance Vergleich: Sie vs. Greedy')).toBeInTheDocument();
+        expect(screen.getByText(/Performance Vergleich: Sie vs. Greedy/)).toBeInTheDocument();
 
         // 2. Überprüfe die Legenden-Einträge, die von den <Line> Komponenten generiert werden
         expect(screen.getByText('Ihre Performance')).toBeInTheDocument();
