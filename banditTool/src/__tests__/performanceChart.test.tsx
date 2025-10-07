@@ -2,17 +2,18 @@ import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { expect } from 'vitest';
 
-// --- FIX 1: Manueller Import der Test-Matcher ---
-// Da die globale setupTests.ts-Datei ignoriert wird, laden wir die Funktionen hier direkt.
-// Das löst den "Invalid Chai property: toBeInTheDocument"-Fehler.
+// FIX 1: Manueller Import der Test-Matcher, um "toBeInTheDocument" verfügbar zu machen
 import * as matchers from '@testing-library/jest-dom/matchers';
 expect.extend(matchers);
 
-// --- FIX 2: Mocking der Recharts-Komponenten ---
-// Wir mocken die Bibliothek und ersetzen den "ResponsiveContainer", der im Test Probleme macht.
-// Das löst den "Unable to find an element"-Fehler, da die Grafik jetzt gerendert wird.
+// Import der zu testenden Komponenten und Hooks
+import PerformanceChart from '../components/performanceChart.tsx';
+import ConfigurationPanel from '../components/configuration.tsx';
+import { useGameLogic } from '../hooks/useGameLogic';
+
+// FIX 2: Mocking der Recharts-Komponente, damit sie in der Testumgebung rendert
 vi.mock('recharts', async (importOriginal) => {
-    const originalModule = await importOriginal();
+    const originalModule = await importOriginal<typeof import('recharts')>();
     return {
         ...originalModule,
         ResponsiveContainer: ({ children }) => (
@@ -23,16 +24,65 @@ vi.mock('recharts', async (importOriginal) => {
     };
 });
 
-// Der ResizeObserver-Mock ist nicht mehr nötig, da wir den ResponsiveContainer ersetzen.
+// Mocking der Spiellogik-Abhängigkeiten für vorhersagbare Tests
+vi.mock('../utils/banditSimulation', () => ({
+    generateDrugProbabilities: vi.fn(() => [0.2, 0.8]),
+    simulateDrugOutcome: vi.fn(() => true),
+    initializeDrugStats: vi.fn((numActions) => {
+        const stats = {};
+        for (let i = 0; i < numActions; i++) {
+            stats[`drug${i}`] = { attempts: 0, successes: 0 };
+        }
+        return stats;
+    }),
+}));
+vi.mock('../utils/algorithms', () => ({
+    algorithms: { greedy: vi.fn(() => 0) },
+}));
 
-// Mocking der Spiellogik-Abhängigkeiten bleibt gleich
-vi.mock('../utils/banditSimulation', () => ({ /* ... Mocks wie zuvor ... */ }));
-vi.mock('../utils/algorithms', () => ({ /* ... Mocks wie zuvor ... */ }));
+// --- HIER IST DIE VOLLSTÄNDIGE TestApp-KOMPONENTE ---
+const TestApp = () => {
+    const initialConfig = {
+        numActions: 5,
+        numIterations: 10,
+        banditType: 'bernoulli',
+        algorithm: 'greedy',
+    };
 
-// --- Test-App bleibt gleich ---
-const TestApp = () => { /* ... TestApp-Komponente wie zuvor ... */ };
+    const gameLogic = useGameLogic(initialConfig);
+
+    const beanButtons = Array.from({ length: initialConfig.numActions }, (_, i) => (
+        <button key={i} onClick={() => gameLogic.handleDrugChoice(i)}>
+            Bohne {i + 1}
+        </button>
+    ));
+
+    // Die Komponente MUSS JSX mit "return" zurückgeben
+    return (
+        <div>
+            <h1>Bandit Coffeeshop</h1>
+            <ConfigurationPanel
+                config={initialConfig}
+                setConfig={() => {}}
+                onStartGame={gameLogic.startGame}
+                onStopGame={gameLogic.stopGame}
+                gameStarted={gameLogic.gameState.isPlaying}
+            />
+
+            {gameLogic.gameState.isPlaying && <div>{beanButtons}</div>}
+
+            {(gameLogic.gameState.isPlaying || gameLogic.isGameComplete) && (
+                <PerformanceChart
+                    algorithmPerformance={gameLogic.algorithmPerformance}
+                    config={initialConfig}
+                />
+            )}
+        </div>
+    );
+};
 
 
+// --- Die Test-Suite ---
 describe('PerformanceChart Integrationstest', () => {
 
     it('wird erst nach Klick auf "Spiel starten" angezeigt und hat die korrekten Achsenbeschriftungen', async () => {
