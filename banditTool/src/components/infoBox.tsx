@@ -1,5 +1,5 @@
 // Importiert verschiedene Icons aus der lucide-react Bibliothek zur visuellen Untermalung.
-import { Coffee, Target, Trophy, Zap } from 'lucide-react';
+import { Coffee, Target} from 'lucide-react';
 // Importiert das zugehörige Stylesheet für die Komponente.
 import './infoBox.css'
 
@@ -25,7 +25,6 @@ export function InfoBox() {
                 <div className="info-content">
                     {/* Erster Absatz: Die narrative Einleitung in die Story. */}
                     <div className="info-paragraph">
-                        <div className="info-emoji">🧠</div>
                         <p>
                             Stell dir vor, du bist ein Barista und hast gerade eine Lieferung mit brandneuen, unbekannten
                             Kaffeebohnen erhalten. Deine Aufgabe ist es, so schnell wie möglich die absolut leckerste
@@ -36,7 +35,6 @@ export function InfoBox() {
 
                     {/* Zweiter Absatz: Die Erklärung des technischen Hintergrunds (Multi-Armed Bandit). */}
                     <div className="info-paragraph">
-                        <div className="info-emoji">🕹️</div>
                         <p>
                             Diese Webseite ist ein spielerischer Simulator, der dich vor ein klassisches Problem der
                             Informatik und Datenwissenschaft stellt: das "Multi-Armed Bandit"-Problem.
@@ -52,7 +50,6 @@ export function InfoBox() {
                         <div className="mission-content">
                             {/* Missionsziel 1: Testen der Bohnen */}
                             <div className="mission-item">
-                                <div className="info-emoji">🧪</div>
                                 <div>
                                     <strong style={{ color: '#059669' }}>Teste die Bohnen:</strong> Klicke auf die verschiedenen
                                     Kaffee-Automaten, um eine Tasse zu "brühen" und das Geschmacksergebnis zu sehen.
@@ -61,7 +58,6 @@ export function InfoBox() {
 
                             {/* Missionsziel 2: Maximieren der Punkte */}
                             <div className="mission-item">
-                                <Trophy className="mission-icon trophy" />
                                 <div>
                                     <strong style={{ color: '#059669' }}>Maximiere deinen Punktestand:</strong> Jede Tasse gibt
                                     dir – je nach Geschmack – eine bestimmte Anzahl an Punkten. Dein Ziel ist es, am Ende
@@ -71,7 +67,6 @@ export function InfoBox() {
 
                             {/* Missionsziel 3: Besser sein als die Algorithmen */}
                             <div className="mission-item">
-                                <Zap className="mission-icon zap" />
                                 <div>
                                     <strong style={{ color: '#059669' }}>Schlage die Algorithmen:</strong> Während du testest,
                                     treten Algorithmen gegen dich an. Beobachte live, für welche Bohnen sie sich entscheiden

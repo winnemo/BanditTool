@@ -48,7 +48,7 @@ const ConfigurationPanel = ({ config, setConfig, onStartGame, onStopGame, gameSt
                     {/* Konfigurationspunkt: Bandit-Typ */}
                     <div className="config-item">
                         <label className="config-label">
-                            📊 Bandit-Typ
+                            Bandit-Typ
                         </label>
                         <div className="select-container">
                             <select

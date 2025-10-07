@@ -5,9 +5,9 @@
 }
 
 .main-container {
+    padding-top: 8rem;
     max-width: 1200px;
     margin: 0 auto;
-    padding: 2rem 1rem;
     display: flex;
     flex-direction: column;
     gap: 1.5rem;
