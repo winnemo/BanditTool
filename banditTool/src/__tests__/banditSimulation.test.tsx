@@ -9,8 +9,8 @@ describe('initializeDrugStats', () => {
 
     // 'test' oder 'it' definiert einen einzelnen Testfall
     test('sollte ein Statistik-Objekt für 3 Medikamente korrekt erstellen', () => {
-        const numDrugs = 3;
-        const stats = initializeDrugStats(numDrugs);
+        const numActions = 3;
+        const stats = initializeDrugStats(numActions);
 
         // 'expect' prüft, ob das Ergebnis den Erwartungen entspricht
         expect(Object.keys(stats)).toHaveLength(3); //3 Schlüssel?

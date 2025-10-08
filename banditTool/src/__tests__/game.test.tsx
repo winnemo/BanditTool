@@ -1,110 +1,431 @@
-import { render, screen } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
-import { describe, test, expect, vi } from 'vitest';
+import { render, screen, fireEvent } from '@testing-library/react';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import '@testing-library/jest-dom';
-
-import GameInterface from '../components/game.tsx';
+import GameInterface from "../components/game.tsx";
 
 describe('GameInterface', () => {
-    // Mock-Daten für die Tests
-    const mockConfig = {
-        numDrugs: 3,
-        numPatients: 10,
+    const mockOnDrugChoice = vi.fn();
+
+    const defaultConfig = {
+        banditType: 'bernoulli',
+        numActions: 5,
+        numIterations: 10,
+        algorithm: 'greedy'
     };
 
-    // Testfall 1: Dieser Test ist bereits korrekt.
-    test('sollte null rendern, wenn das Spiel weder läuft noch beendet ist', () => {
-        const mockGameState = { isPlaying: false };
-        const { container } = render(
-            <GameInterface
-                gameState={mockGameState}
-                config={mockConfig}
-                isGameComplete={false}
-            />
-        );
-        expect(container).toBeEmptyDOMElement();
+    const defaultGameState = {
+        isPlaying: true,
+        currentPatient: 1,
+        savedLives: 0
+    };
+
+    const defaultAlgorithmState = {
+        choice: -1,
+        success: false
+    };
+
+    beforeEach(() => {
+        vi.clearAllMocks();
     });
 
-    // Testfall 2: Korrigierte Assertions
-    test('sollte die Zusammenfassung anzeigen, wenn das Spiel beendet ist', () => {
-        const mockGameState = {
-            isPlaying: false,
-            savedLives: 7,
-        };
-        render(
-            <GameInterface
-                gameState={mockGameState}
-                config={mockConfig}
-                isGameComplete={true}
-            />
-        );
+    describe('Rendering Zustände', () => {
+        it('sollte null zurückgeben wenn Spiel nicht läuft und nicht beendet ist', () => {
+            const { container } = render(
+                <GameInterface
+                    gameState={{ ...defaultGameState, isPlaying: false }}
+                    config={defaultConfig}
+                    onDrugChoice={mockOnDrugChoice}
+                    isGameComplete={false}
+                    notification={null}
+                    algorithmState={defaultAlgorithmState}
+                />
+            );
 
-        expect(screen.getByRole('heading', { name: /Spiel beendet!/i })).toBeInTheDocument();
+            expect(container.firstChild).toBeNull();
+        });
 
-        // KORREKTUR: Finde das Element über einen statischen Teil und prüfe dann den gesamten Inhalt.
-        const summaryElement = screen.getByText(/Patienten gerettet/i);
-        expect(summaryElement).toHaveTextContent('Sie haben 7 von 10 Patienten gerettet');
+        it('sollte die Spieloberfläche anzeigen wenn Spiel läuft', () => {
+            render(
+                <GameInterface
+                    gameState={defaultGameState}
+                    config={defaultConfig}
+                    onDrugChoice={mockOnDrugChoice}
+                    isGameComplete={false}
+                    notification={null}
+                    algorithmState={defaultAlgorithmState}
+                />
+            );
 
-        const rateElement = screen.getByText(/Erfolgsrate:/i);
-        expect(rateElement).toHaveTextContent('Erfolgsrate: 70.0%');
+            expect(screen.getByText(/Runde 1 von 10/)).toBeInTheDocument();
+        });
+
+        it('sollte den Abschlussbildschirm anzeigen wenn Spiel beendet ist', () => {
+            render(
+                <GameInterface
+                    gameState={{ ...defaultGameState, savedLives: 8 }}
+                    config={defaultConfig}
+                    onDrugChoice={mockOnDrugChoice}
+                    isGameComplete={true}
+                    notification={null}
+                    algorithmState={defaultAlgorithmState}
+                />
+            );
+
+            expect(screen.getByText(/Spiel beendet!/)).toBeInTheDocument();
+        });
     });
 
-    // Testfall 3: Korrigierte Assertions
-    test('sollte die aktive Spieloberfläche korrekt rendern', () => {
-        const mockGameState = {
-            isPlaying: true,
-            currentPatient: 4,
-            savedLives: 2,
-            drugStats: {
-                drug0: { attempts: 2, successes: 1 },
-                drug1: { attempts: 3, successes: 1 },
-            },
-        };
-        render(
-            <GameInterface
-                gameState={mockGameState}
-                config={mockConfig}
-                onDrugChoice={() => {}}
-                isGameComplete={false}
-            />
-        );
+    describe('Spielstatus Anzeige', () => {
+        it('sollte die aktuelle Runde korrekt anzeigen', () => {
+            render(
+                <GameInterface
+                    gameState={{ ...defaultGameState, currentPatient: 5 }}
+                    config={defaultConfig}
+                    onDrugChoice={mockOnDrugChoice}
+                    isGameComplete={false}
+                    notification={null}
+                    algorithmState={defaultAlgorithmState}
+                />
+            );
 
-        // Suche nach einer Überschrift (h1, h2, h3...), die den Text "Patient" enthält.
-        const patientElement = screen.getByRole('heading', { name: /Patient/i });
-        expect(patientElement).toHaveTextContent('Patient 5 von 10');
+            expect(screen.getByText(/Runde 5 von 10/)).toBeInTheDocument();
+        });
 
-        const livesElement = screen.getByText(/Gerettete Leben:/i);
-        expect(livesElement).toHaveTextContent('Gerettete Leben: 2');
+        it('sollte die Anzahl gebrühter Tassen korrekt anzeigen', () => {
+            render(
+                <GameInterface
+                    gameState={{ ...defaultGameState, currentPatient: 5, savedLives: 3 }}
+                    config={defaultConfig}
+                    onDrugChoice={mockOnDrugChoice}
+                    isGameComplete={false}
+                    notification={null}
+                    algorithmState={defaultAlgorithmState}
+                />
+            );
 
-        const drugButtons = screen.getAllByRole('button', { name: /Medikament \d/i });
-        expect(drugButtons).toHaveLength(mockConfig.numDrugs);
-
-        const drug1SuccessRate = screen.getByText(/Erfolgsrate: 50.0%/i);
-        expect(drug1SuccessRate).toBeInTheDocument();
+            expect(screen.getByText(/Gebrühte Tassen: 3 von 5/)).toBeInTheDocument();
+        });
     });
 
-    // Testfall 4: Dieser Test ist bereits korrekt.
-    test('sollte onDrugChoice mit dem korrekten Index aufrufen, wenn ein Button geklickt wird', async () => {
-        const mockOnDrugChoice = vi.fn();
-        const mockGameState = {
-            isPlaying: true,
-            currentPatient: 0,
-            savedLives: 0,
-            drugStats: {},
-        };
-        render(
-            <GameInterface
-                gameState={mockGameState}
-                config={mockConfig}
-                onDrugChoice={mockOnDrugChoice}
-                isGameComplete={false}
-            />
-        );
+    describe('Bohnen Buttons', () => {
+        it('sollte die korrekte Anzahl von Bohnen-Buttons rendern', () => {
+            render(
+                <GameInterface
+                    gameState={defaultGameState}
+                    config={defaultConfig}
+                    onDrugChoice={mockOnDrugChoice}
+                    isGameComplete={false}
+                    notification={null}
+                    algorithmState={defaultAlgorithmState}
+                />
+            );
 
-        const secondDrugButton = screen.getByRole('button', { name: /medikament 2/i });
-        await userEvent.click(secondDrugButton);
+            const buttons = screen.getAllByText(/Bohne \d+/);
+            expect(buttons).toHaveLength(5);
+        });
 
-        expect(mockOnDrugChoice).toHaveBeenCalledTimes(1);
-        expect(mockOnDrugChoice).toHaveBeenCalledWith(1);
+        it('sollte onDrugChoice mit korrektem Index aufrufen', () => {
+            render(
+                <GameInterface
+                    gameState={defaultGameState}
+                    config={defaultConfig}
+                    onDrugChoice={mockOnDrugChoice}
+                    isGameComplete={false}
+                    notification={null}
+                    algorithmState={defaultAlgorithmState}
+                />
+            );
+
+            const button = screen.getByText('☕ Bohne 3');
+            fireEvent.click(button);
+
+            expect(mockOnDrugChoice).toHaveBeenCalledWith(2);
+        });
+
+        it('sollte Bohnen-Buttons mit unterschiedlicher Anzahl rendern', () => {
+            const configWith8Actions = { ...defaultConfig, numActions: 8 };
+
+            render(
+                <GameInterface
+                    gameState={defaultGameState}
+                    config={configWith8Actions}
+                    onDrugChoice={mockOnDrugChoice}
+                    isGameComplete={false}
+                    notification={null}
+                    algorithmState={defaultAlgorithmState}
+                />
+            );
+
+            const buttons = screen.getAllByText(/Bohne \d+/);
+            expect(buttons).toHaveLength(8);
+        });
+
+        it('sollte Buttons deaktivieren wenn Spiel beendet ist', () => {
+            render(
+                <GameInterface
+                    gameState={defaultGameState}
+                    config={defaultConfig}
+                    onDrugChoice={mockOnDrugChoice}
+                    isGameComplete={true}
+                    notification={null}
+                    algorithmState={defaultAlgorithmState}
+                />
+            );
+
+            const buttons = screen.queryAllByText(/Bohne \d+/);
+            buttons.forEach(button => {
+                expect(button.closest('button')).toBeDisabled();
+            });
+        });
+
+        it('sollte algo-selected Klasse auf gewählter Bohne anzeigen', () => {
+            const algoStateWithChoice = { choice: 2, success: true };
+
+            render(
+                <GameInterface
+                    gameState={defaultGameState}
+                    config={defaultConfig}
+                    onDrugChoice={mockOnDrugChoice}
+                    isGameComplete={false}
+                    notification={null}
+                    algorithmState={algoStateWithChoice}
+                />
+            );
+
+            const button = screen.getByText('☕ Bohne 3').closest('button');
+            expect(button).toHaveClass('algo-selected');
+        });
+    });
+
+    describe('Benachrichtigungen', () => {
+        it('sollte keine Benachrichtigung anzeigen wenn keine vorhanden', () => {
+            render(
+                <GameInterface
+                    gameState={defaultGameState}
+                    config={defaultConfig}
+                    onDrugChoice={mockOnDrugChoice}
+                    isGameComplete={false}
+                    notification={null}
+                    algorithmState={defaultAlgorithmState}
+                />
+            );
+
+            expect(screen.queryByTestId('notification-box')).not.toBeInTheDocument();
+        });
+
+        it('sollte Benachrichtigung anzeigen wenn vorhanden', () => {
+            const notification = <div data-testid="test-notification">Test Nachricht</div>;
+
+            render(
+                <GameInterface
+                    gameState={defaultGameState}
+                    config={defaultConfig}
+                    onDrugChoice={mockOnDrugChoice}
+                    isGameComplete={false}
+                    notification={notification}
+                    algorithmState={defaultAlgorithmState}
+                />
+            );
+
+            expect(screen.getByTestId('test-notification')).toBeInTheDocument();
+        });
+    });
+
+    describe('Algorithmus Bereich', () => {
+        it('sollte Algorithmus-Bereich nicht anzeigen ohne Wahl', () => {
+            render(
+                <GameInterface
+                    gameState={defaultGameState}
+                    config={defaultConfig}
+                    onDrugChoice={mockOnDrugChoice}
+                    isGameComplete={false}
+                    notification={null}
+                    algorithmState={{ choice: -1, success: false }}
+                />
+            );
+
+            expect(screen.queryByText(/Algorithmus/)).not.toBeInTheDocument();
+        });
+
+        it('sollte Algorithmus-Bereich anzeigen mit Wahl', () => {
+            const algoStateWithChoice = { choice: 2, success: true };
+
+            render(
+                <GameInterface
+                    gameState={defaultGameState}
+                    config={defaultConfig}
+                    onDrugChoice={mockOnDrugChoice}
+                    isGameComplete={false}
+                    notification={null}
+                    algorithmState={algoStateWithChoice}
+                />
+            );
+
+            expect(screen.getByText(/Greedy Algorithmus/)).toBeInTheDocument();
+        });
+
+        it('sollte den Algorithmus-Namen korrekt formatieren', () => {
+            const epsilonConfig = { ...defaultConfig, algorithm: 'epsilon-greedy' };
+            const algoStateWithChoice = { choice: 1, success: true };
+
+            render(
+                <GameInterface
+                    gameState={defaultGameState}
+                    config={epsilonConfig}
+                    onDrugChoice={mockOnDrugChoice}
+                    isGameComplete={false}
+                    notification={null}
+                    algorithmState={algoStateWithChoice}
+                />
+            );
+
+            expect(screen.getByText(/Epsilon greedy Algorithmus/)).toBeInTheDocument();
+        });
+
+        it('sollte die gewählte Bohne anzeigen', () => {
+            const algoStateWithChoice = { choice: 3, success: true };
+
+            render(
+                <GameInterface
+                    gameState={defaultGameState}
+                    config={defaultConfig}
+                    onDrugChoice={mockOnDrugChoice}
+                    isGameComplete={false}
+                    notification={null}
+                    algorithmState={algoStateWithChoice}
+                />
+            );
+
+            expect(screen.getByText(/Wahl: Bohne 4/)).toBeInTheDocument();
+        });
+
+        it('sollte Erfolg korrekt anzeigen', () => {
+            const algoStateWithChoice = { choice: 1, success: true };
+
+            render(
+                <GameInterface
+                    gameState={defaultGameState}
+                    config={defaultConfig}
+                    onDrugChoice={mockOnDrugChoice}
+                    isGameComplete={false}
+                    notification={null}
+                    algorithmState={algoStateWithChoice}
+                />
+            );
+
+            expect(screen.getByText('Erfolgreich')).toBeInTheDocument();
+        });
+
+        it('sollte Misserfolg korrekt anzeigen', () => {
+            const algoStateWithChoice = { choice: 1, success: false };
+
+            render(
+                <GameInterface
+                    gameState={defaultGameState}
+                    config={defaultConfig}
+                    onDrugChoice={mockOnDrugChoice}
+                    isGameComplete={false}
+                    notification={null}
+                    algorithmState={algoStateWithChoice}
+                />
+            );
+
+            expect(screen.getByText('Misserfolg')).toBeInTheDocument();
+        });
+    });
+
+    describe('Abschlussbildschirm', () => {
+        it('sollte die Erfolgsrate korrekt berechnen und anzeigen', () => {
+            render(
+                <GameInterface
+                    gameState={{ ...defaultGameState, savedLives: 7 }}
+                    config={defaultConfig}
+                    onDrugChoice={mockOnDrugChoice}
+                    isGameComplete={true}
+                    notification={null}
+                    algorithmState={defaultAlgorithmState}
+                />
+            );
+
+            expect(screen.getByText(/70.0%/)).toBeInTheDocument();
+        });
+
+        it('sollte Erfolgsrate von 100% korrekt anzeigen', () => {
+            render(
+                <GameInterface
+                    gameState={{ ...defaultGameState, savedLives: 10 }}
+                    config={defaultConfig}
+                    onDrugChoice={mockOnDrugChoice}
+                    isGameComplete={true}
+                    notification={null}
+                    algorithmState={defaultAlgorithmState}
+                />
+            );
+
+            expect(screen.getByText(/100.0%/)).toBeInTheDocument();
+        });
+
+        it('sollte Erfolgsrate von 0% korrekt anzeigen', () => {
+            render(
+                <GameInterface
+                    gameState={{ ...defaultGameState, savedLives: 0 }}
+                    config={defaultConfig}
+                    onDrugChoice={mockOnDrugChoice}
+                    isGameComplete={true}
+                    notification={null}
+                    algorithmState={defaultAlgorithmState}
+                />
+            );
+
+            expect(screen.getByText(/0.0%/)).toBeInTheDocument();
+        });
+    });
+
+    describe('Integration Tests', () => {
+        it('sollte mehrere Bohnen-Klicks verarbeiten', () => {
+            render(
+                <GameInterface
+                    gameState={defaultGameState}
+                    config={defaultConfig}
+                    onDrugChoice={mockOnDrugChoice}
+                    isGameComplete={false}
+                    notification={null}
+                    algorithmState={defaultAlgorithmState}
+                />
+            );
+
+            fireEvent.click(screen.getByText('☕ Bohne 1'));
+            fireEvent.click(screen.getByText('☕ Bohne 3'));
+            fireEvent.click(screen.getByText('☕ Bohne 5'));
+
+            expect(mockOnDrugChoice).toHaveBeenCalledTimes(3);
+            expect(mockOnDrugChoice).toHaveBeenNthCalledWith(1, 0);
+            expect(mockOnDrugChoice).toHaveBeenNthCalledWith(2, 2);
+            expect(mockOnDrugChoice).toHaveBeenNthCalledWith(3, 4);
+        });
+
+        it('sollte Algorithmus-Namen für alle Typen korrekt formatieren', () => {
+            const algorithms = ['greedy', 'epsilon-greedy', 'random'];
+            const expectedNames = ['Greedy Algorithmus', 'Epsilon greedy Algorithmus', 'Random Algorithmus'];
+
+            algorithms.forEach((algo, index) => {
+                const config = { ...defaultConfig, algorithm: algo };
+                const algoState = { choice: 0, success: true };
+
+                const { unmount } = render(
+                    <GameInterface
+                        gameState={defaultGameState}
+                        config={config}
+                        onDrugChoice={mockOnDrugChoice}
+                        isGameComplete={false}
+                        notification={null}
+                        algorithmState={algoState}
+                    />
+                );
+
+                expect(screen.getByText(expectedNames[index])).toBeInTheDocument();
+                unmount();
+            });
+        });
     });
 });

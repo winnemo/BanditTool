@@ -1,5 +1,7 @@
 .chart-container {
-    width: 100%;
-    height: 400px;
     margin-top: 2rem;
+}
+
+#chart {
+    min-height: 300px;
 }
