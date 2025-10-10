@@ -7,7 +7,6 @@ import * as matchers from '@testing-library/jest-dom/matchers';
 expect.extend(matchers);
 
 // Import der zu testenden Komponenten und Hooks
-import PerformanceChart from '../components/performanceChart.tsx';
 import ConfigurationPanel from '../components/configuration.tsx';
 import { useGameLogic } from '../hooks/useGameLogic';
 
