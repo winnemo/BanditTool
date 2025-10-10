@@ -1,4 +1,12 @@
 /* Game Area Styles */
+.game-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    font-size: 1rem;
+}
+
 .beans-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));

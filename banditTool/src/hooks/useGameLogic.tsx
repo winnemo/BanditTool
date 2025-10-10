@@ -1,140 +1,182 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { algorithms } from '../utils/algorithms';
 import { generateDrugProbabilities, simulateDrugOutcome, initializeDrugStats } from '../utils/banditSimulation';
 
-/**
- * Ein Custom React Hook, der die gesamte Spiellogik und das State Management kapselt.
- * @param {object} config - Das Konfigurationsobjekt aus dem Einstellungs-Panel.
- * @returns {object} Ein Objekt mit allen Zuständen und Handlern, die für die UI benötigt werden.
- */
-export const useGameLogic = (config) => {
-    // Zentraler State für den Spieler und den allgemeinen Spielverlauf.
-    const [gameState, setGameState] = useState({
+// ==================================================================
+// NEU: Definitionen für alle unsere Datenstrukturen
+// ==================================================================
+
+// Definiert die möglichen Namen der Algorithmen
+type AlgorithmType = 'greedy' | 'epsilon-greedy' | 'random';
+
+//Flexibler Type für Wahrscheinlchkeiten
+type BanditProbabilities = number[] | { mean: number; std: number; N: number };
+
+// Definiert die Struktur des Konfigurationsobjekts
+interface Config {
+    numActions: number;
+    numIterations: number;
+    banditType: 'bernoulli' | 'gaussian';
+    algorithms: AlgorithmType[];
+}
+
+// Definiert die Statistiken für eine einzelne Bohne
+interface DrugStat {
+    attempts: number;
+    successes: number;
+}
+
+// Definiert ein Objekt, das die Statistiken für alle Bohnen enthält
+// z.B. { drug0: { attempts: 0, successes: 0 }, drug1: ... }
+interface DrugStats {
+    [key: string]: DrugStat;
+}
+
+// Definiert die Struktur des Haupt-Spielzustands
+interface GameState {
+    currentPatient: number;
+    savedLives: number;
+    isPlaying: boolean;
+    drugStats: DrugStats;
+}
+
+// Definiert die Struktur für den Zustand eines einzelnen Algorithmus (für die UI)
+interface AlgorithmState {
+    name: AlgorithmType;
+    choice: number;
+    success: boolean | null;
+}
+
+// Definiert die Struktur eines Datenpunkts für den Graphen
+interface PerformanceDataPoint {
+    patient: number;
+    playerSavedLives: number;
+    [key: string]: number; // Erlaubt dynamische Keys für die Algorithmen, z.B. 'Greedy': 5
+}
+
+// ==================================================================
+// Der eigentliche Hook mit den neuen Typ-Annotationen
+// ==================================================================
+const ALL_ALGORITHMS: AlgorithmType[] = ['greedy', 'epsilon-greedy', 'random'];
+
+export const useGameLogic = (config: Config) => {
+    // State mit Typen versehen
+    const [gameState, setGameState] = useState<GameState>({
         currentPatient: 0,
         savedLives: 0,
-        gameData: [],
         isPlaying: false,
         drugStats: {},
-        showPlot: false
     });
+    const [drugProbabilities, setDrugProbabilities] = useState<BanditProbabilities>([]);
+    const [algorithmPerformance, setAlgorithmPerformance] = useState<PerformanceDataPoint[]>([]);
+    const [notification, setNotification] = useState<string | null>(null);
+    const [algorithmStates, setAlgorithmStates] = useState<AlgorithmState[]>([]);
+    const [algorithmStats, setAlgorithmStats] = useState<{ [key in AlgorithmType]?: DrugStats }>({});
 
-    // State für die "wahren", aber unbekannten Erfolgswahrscheinlichkeiten der Bohnen.
-    const [drugProbabilities, setDrugProbabilities] = useState([]);
-    // State für die Performance-Daten des Graphen.
-    const [algorithmPerformance, setAlgorithmPerformance] = useState([]);
-    // State für Benachrichtigungen an den Spieler.
-    const [notification, setNotification] = useState(null);
-    // State für die letzte Aktion des Algorithmus (zur Anzeige in der UI).
-    const [algorithmState, setAlgorithmState] = useState({ choice: -1, success: null });
+    const resetGame = useCallback(() => {
+        const initialPlayerStats = initializeDrugStats(config.numActions);
+        setGameState(prevState => ({
+            ...prevState,
+            currentPatient: 0,
+            savedLives: 0,
+            drugStats: initialPlayerStats,
+        }));
 
-    // Separater State für die Statistiken des Algorithmus, um Fairness zu gewährleisten.
-    const [algorithmStats, setAlgorithmStats] = useState({});
+        // Parameter 'acc' und 'algoName' sind jetzt getypt
+        const initialAlgoStats = ALL_ALGORITHMS.reduce((acc: { [key in AlgorithmType]?: DrugStats }, algoName: AlgorithmType) => {
+            acc[algoName] = initializeDrugStats(config.numActions);
+            return acc;
+        }, {});
+        setAlgorithmStats(initialAlgoStats);
 
-    // Dieser Effekt wird ausgelöst, wenn sich die Konfiguration ändert. Er setzt das gesamte Spiel zurück.
+        const initialAlgoStates = ALL_ALGORITHMS.map((name: AlgorithmType) => ({
+            name,
+            choice: -1,
+            success: null
+        }));
+        setAlgorithmStates(initialAlgoStates);
+        setAlgorithmPerformance([]);
+        setNotification(null);
+    }, [config.numActions]);
+
     useEffect(() => {
         const probs = generateDrugProbabilities(config.numActions, config.banditType);
         setDrugProbabilities(probs);
+        resetGame();
+    }, [config.numActions, config.banditType, resetGame]);
 
-        const initialDrugStats = initializeDrugStats(config.numActions);
-
-        // Alle relevanten States auf ihren Anfangszustand zurücksetzen.
-        setGameState({
-            currentPatient: 0,
-            savedLives: 0,
-            gameData: [],
-            isPlaying: false,
-            drugStats: initialDrugStats,
-            showPlot: false
-        });
-        setAlgorithmStats(initializeDrugStats(config.numActions)); // Wichtig: auch Algorithmus-Stats zurücksetzen
-        setAlgorithmPerformance([]);
-        setNotification(null);
-        setAlgorithmState({ choice: -1, success: null });
-    }, [config.numActions, config.banditType]);
-
-    // Abgeleiteter Wert: Prüft, ob das Spiel beendet ist.
     const isMaxAttemptsReached = gameState.currentPatient >= config.numIterations;
 
-    // Handler, der bei jeder Spieler-Aktion aufgerufen wird.
-    const handleDrugChoice = (drugIndex) => {
-        // Guard-Clauses, um ungültige Aktionen zu verhindern.
-        if (!gameState.isPlaying) {
-            setNotification("Bitte starten Sie das Spiel zuerst.");
-            return;
-        }
-        if (isMaxAttemptsReached) {
-            setNotification("Maximale Anzahl an Versuchen erreicht! Bitte klicken Sie auf 'Spiel abbrechen'.");
-            return;
-        }
+    // Parameter 'drugIndex' ist jetzt getypt
+    const handleDrugChoice = (drugIndex: number) => {
 
+        if (!gameState.isPlaying || isMaxAttemptsReached) return;
         const newCurrentPatient = gameState.currentPatient + 1;
 
-        // --- 1. Spieler-Logik ---
         const playerSuccess = simulateDrugOutcome(drugIndex, drugProbabilities, config.banditType);
         const newSavedLives = gameState.savedLives + (playerSuccess ? 1 : 0);
-        const newDrugStats = {...gameState.drugStats};
+        const newDrugStats = { ...gameState.drugStats };
         newDrugStats[`drug${drugIndex}`].attempts++;
         if (playerSuccess) newDrugStats[`drug${drugIndex}`].successes++;
 
-        // --- 2. Algorithmus-Logik (Echtzeit-Simulation) ---
-        const algoChoice = algorithms[config.algorithm](algorithmStats, config.numActions);
-        const algoSuccess = simulateDrugOutcome(algoChoice, drugProbabilities, config.banditType);
-        const newAlgoStats = {...algorithmStats};
-        newAlgoStats[`drug${algoChoice}`].attempts++;
-        if (algoSuccess) newAlgoStats[`drug${algoChoice}`].successes++;
-        setAlgorithmStats(newAlgoStats); // Algorithmus-Stats separat aktualisieren.
+        const newAlgorithmStates: AlgorithmState[] = [];
+        const newOverallAlgoStats = { ...algorithmStats };
+        const performanceUpdate: { [key: string]: number } = {};
 
-        // --- 3. Performance-Update (für den Graphen) ---
-        const lastAlgoSavedLives = algorithmPerformance.length > 0
-            ? algorithmPerformance[algorithmPerformance.length - 1].algorithmSavedLives
-            : 0;
-        const currentAlgoSavedLives = lastAlgoSavedLives + (algoSuccess ? 1 : 0);
-        const currentDataPoint = {
-            patient: newCurrentPatient,
-            playerSavedLives: newSavedLives,
-            algorithmSavedLives: currentAlgoSavedLives,
-        };
+        ALL_ALGORITHMS.forEach((algoName: AlgorithmType) => {
+
+            const currentAlgoStats = algorithmStats[algoName];
+            if (!currentAlgoStats) return; // Sicherheits-Check
+
+            const choice = algorithms[algoName](currentAlgoStats, config.numActions);
+
+            const success = simulateDrugOutcome(choice, drugProbabilities, config.banditType);
+
+            const newStatsForAlgo = { ...currentAlgoStats };
+            newStatsForAlgo[`drug${choice}`].attempts++;
+            if (success) newStatsForAlgo[`drug${choice}`].successes++;
+            newOverallAlgoStats[algoName] = newStatsForAlgo;
+
+            newAlgorithmStates.push({ name: algoName, choice, success });
+            performanceUpdate[algoName] = success ? 1 : 0;
+        });
+
+        setAlgorithmStats(newOverallAlgoStats);
+        setAlgorithmStates(newAlgorithmStates);
+
+        const lastPerformancePoint = algorithmPerformance.length > 0 ? algorithmPerformance[algorithmPerformance.length - 1] : {};
+        const currentDataPoint: PerformanceDataPoint = { patient: newCurrentPatient, playerSavedLives: newSavedLives };
+
+        ALL_ALGORITHMS.forEach((algoName: AlgorithmType) => {
+            const lastSaved = lastPerformancePoint[algoName] || 0;
+            currentDataPoint[algoName] = lastSaved + performanceUpdate[algoName];
+        });
+
         setAlgorithmPerformance((prev) => [...prev, currentDataPoint]);
 
-        // --- 4. Zentrale State-Updates am Ende aller Berechnungen ---
         setGameState({
             ...gameState,
             currentPatient: newCurrentPatient,
             savedLives: newSavedLives,
             drugStats: newDrugStats,
         });
-        setAlgorithmState({
-            choice: algoChoice,
-            success: algoSuccess,
-        });
     };
 
-    // Funktion zum Starten des Spiels. Setzt alles zurück und setzt isPlaying auf true.
     const startGame = () => {
-        const initialDrugStats = initializeDrugStats(config.numActions);
-        setGameState({
-            currentPatient: 0,
-            savedLives: 0,
-            gameData: [],
-            isPlaying: true,
-            drugStats: initialDrugStats,
-            showPlot: false
-        });
-        setAlgorithmStats(initialDrugStats);
-        setAlgorithmPerformance([]);
-        setNotification(null);
-        setAlgorithmState({ choice: -1, success: null });
+        resetGame();
+        setGameState(prevState => ({
+            ...prevState,
+            isPlaying: true
+        }));
     };
 
-    // Funktion zum Stoppen des Spiels.
     const stopGame = () => {
-        setGameState({...gameState, isPlaying: false});
-        setNotification("Spiel beendet. Starten Sie das Spiel neu, um die Konfiguration zu ändern.");
+        setGameState(prevState => ({ ...prevState, isPlaying: false }));
+        setNotification("Spiel beendet. Starten Sie ein neues Spiel, um die Konfiguration zu ändern.");
     };
 
     const isGameComplete = gameState.currentPatient >= config.numIterations;
 
-    // Rückgabe aller Werte, die von UI-Komponenten benötigt werden.
     return {
         gameState,
         algorithmPerformance,
@@ -143,6 +185,6 @@ export const useGameLogic = (config) => {
         stopGame,
         isGameComplete,
         notification,
-        algorithmState,
+        algorithmStates,
     };
 };

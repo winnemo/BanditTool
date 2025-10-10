@@ -217,3 +217,71 @@
         max-width: 300px;
     }
 }
+
+/* Container für die Algorithmus-Karten */
+.algorithm-card-container {
+    display: flex;
+    flex-wrap: wrap; /* Erlaubt Umbruch auf kleineren Bildschirmen */
+    gap: 1rem;
+    margin-top: 0.5rem;
+}
+
+/* Basis-Styling für jede anklickbare Karte */
+.algorithm-card {
+    flex: 1; /* Sorgt für gleichmäßige Breite der Karten */
+    min-width: 150px; /* Mindestbreite, bevor es umbricht */
+    padding: 1.25rem 1rem;
+    border: 2px solid #e5e7eb; /* Heller Rand, passend zu deinen Inputs */
+    border-radius: 0.5rem; /* Passend zu deinem Card-Radius */
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s ease-in-out;
+    background-color: #f9fafb; /* Ein sehr leichter Grauton */
+    position: relative;
+}
+
+/* Die eigentliche Checkbox komplett verstecken */
+.algorithm-card .hidden-checkbox {
+    display: none;
+}
+
+/* Hover-Effekt: Karte hebt sich leicht an */
+.algorithm-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    border-color: #d1d5db;
+}
+
+/* Styling für ausgewählte Karten (mit deiner Akzentfarbe!) */
+.algorithm-card.selected {
+    border-color: #059669;
+    background-color: #f0fdf4; /* Passendes helles Grün */
+    box-shadow: 0 2px 8px rgba(5, 150, 105, 0.15);
+    transform: translateY(-2px); /* leichter "Klick"-Effekt */
+}
+
+/* Styling der Elemente IN der Karte */
+.algorithm-card .card-icon {
+    margin-bottom: 0.75rem;
+    color: #059669; /* Icon in deiner Akzentfarbe */
+}
+
+.algorithm-card .card-icon svg {
+    width: 28px;
+    height: 28px;
+    stroke-width: 2; /* Etwas dickere Linien für die Icons */
+}
+
+.algorithm-card .card-title-algo {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #1f2937;
+    margin: 0 0 0.5rem 0;
+}
+
+.algorithm-card .card-desc {
+    font-size: 0.875rem;
+    color: #4b5563; /* Etwas dunkleres Grau für bessere Lesbarkeit */
+    margin: 0;
+    line-height: 1.4;
+}

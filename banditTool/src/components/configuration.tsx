@@ -1,6 +1,8 @@
 // Importiert notwendige Icons aus der 'lucide-react' Bibliothek und das zugehörige CSS-Styling.
-import { Settings, Coffee, RotateCcw, Play, AlertCircle } from 'lucide-react';
+import { Settings, Coffee, RotateCcw, Play, AlertCircle, ChartColumnIncreasing, ChartNoAxesCombined, Dices } from 'lucide-react';
 import "./configuration.css";
+
+type AlgorithmType = 'greedy' | 'epsilon-greedy' | 'random';
 
 /**
  * Eine React-Komponente, die ein Konfigurationspanel für ein "Multi-Armed Bandit"-Spiel anzeigt.
@@ -16,6 +18,22 @@ import "./configuration.css";
  * @returns {JSX.Element} Das gerenderte Konfigurationspanel.
  */
 const ConfigurationPanel = ({ config, setConfig, onStartGame, onStopGame, gameStarted }) => {
+
+    // Beschreibungen für die einzelnen Algorithmen
+    const algorithmDescriptions: Record<AlgorithmType, string> = {
+        'Greedy': 'Wählt immer die aktuell beste bekannte Kaffeebohne aus.',
+        'Epsilon-Greedy': 'Wählt meistens die beste Bohne, aber manchmal auch zufällig, um neue Optionen zu erkunden.',
+        'Random': 'Wählt komplett zufällig und dient als Vergleichsbasis.'
+    };
+
+    // Handler-Funktion zum Hinzufügen/Entfernen eines Algorithmus.
+    const handleAlgorithmToggle = (algo: AlgorithmType) => {
+        const currentAlgorithms = config.algorithms || [];
+        const newAlgorithms = currentAlgorithms.includes(algo)
+            ? currentAlgorithms.filter((a) => a !== algo) // Algorithmus entfernen
+            : [...currentAlgorithms, algo]; // Algorithmus hinzufügen
+            setConfig({ ...config, algorithms: newAlgorithms });
+    };
 
     // Handler-Funktion für Änderungen am Slider/Input für die Anzahl der Aktionen ("Bohnen").
     // Stellt sicher, dass der Wert eine gültige Zahl im Bereich von 1 bis 10 ist.
@@ -106,7 +124,7 @@ const ConfigurationPanel = ({ config, setConfig, onStartGame, onStopGame, gameSt
                     {/* Konfigurationspunkt: Anzahl der Iterationen (Versuche) */}
                     <div className="config-item">
                         <label className="config-label">
-                            <RotateCcw className="config-icon" />
+                            <RotateCcw className="config-icon"/>
                             Anzahl Versuche: {config.numIterations}
                         </label>
                         <div className="slider-container">
@@ -141,65 +159,89 @@ const ConfigurationPanel = ({ config, setConfig, onStartGame, onStopGame, gameSt
                     <div className="config-separator">
                         <p className="tip-text">
                             <span className="tip-emoji">💡</span>
-                            Stelle die Parameter für dein Multi-Armed Bandit Experiment ein. Mehr Bohnen bedeuten mehr Optionen, aber auch schwierigere Entscheidungen!
+                            Stelle die Parameter für dein Multi-Armed Bandit Experiment ein. Mehr Bohnen bedeuten mehr
+                            Optionen, aber auch schwierigere Entscheidungen!
                         </p>
                     </div>
 
                     {/* Konfigurationspunkt: Algorithmus-Auswahl */}
                     <div className="config-item">
                         <label className="config-label">
-                            <AlertCircle className="config-icon" />
-                            Algorithmus
+                            <AlertCircle className="config-icon"/>
+                            Wähle deine Gegner:
                         </label>
-                        <div className="select-container">
-                            <select
-                                id="algorithm"
-                                value={config.algorithm}
-                                onChange={(e) => setConfig({ ...config, algorithm: e.target.value })}
-                                className="select-trigger"
-                            >
-                                <option value="greedy">Greedy</option>
-                                <option value="epsilon-greedy">ε-Greedy</option>
-                                <option value="random">Random</option>
-                            </select>
+                        <div className="algorithm-card-container">
+                            {[
+                                {
+                                    id: 'greedy',
+                                    icon: <ChartColumnIncreasing/>,
+                                    desc: 'Wählt immer die aktuell beste bekannte Kaffeebohne aus.'
+                                },
+                                {
+                                    id: 'epsilon-greedy',
+                                    icon: <ChartNoAxesCombined/>,
+                                    desc: 'Meistens die beste Bohne, aber manchmal neugierig auf andere.'
+                                },
+                                {
+                                    id: 'random',
+                                    icon: <Dices/>,
+                                    desc: 'Reiner Zufall. Dient als gute Vergleichsbasis.'
+                                }
+                            ].map((algo) => {
+                                const isChecked = config.algorithms?.includes(algo.id) ?? false;
+                                return (
+                                    <label key={algo.id} className={`algorithm-card ${isChecked ? 'selected' : ''}`}>
+                                        {/* Die eigentliche Checkbox ist für die Logik da, aber unsichtbar */}
+                                        <input
+                                            type="checkbox"
+                                            className="hidden-checkbox"
+                                            checked={isChecked}
+                                            onChange={() => handleAlgorithmToggle(algo.id)}
+                                        />
+                                        <div className="card-icon">{algo.icon}</div>
+                                        <h4 className="card-title-algo">{algo.id}</h4>
+                                        <p className="card-desc">{algo.desc}</p>
+                                    </label>
+                                );
+                            })}
                         </div>
-                    </div>
 
-                    {/* Container für die Start/Stop-Aktionsbuttons */}
-                    <div className="button-container">
-                        <button
-                            className={`button button-start ${gameStarted ? 'disabled' : ''}`}
-                            onClick={onStartGame}
-                            disabled={gameStarted} // Button wird deaktiviert, wenn das Spiel läuft
-                        >
-                            {/* Bedingte Anzeige: Text ändert sich, je nachdem ob das Spiel läuft */}
-                            {gameStarted ? (
-                                <>
-                                    <div className="spin-animation">⚡</div>
-                                    Spiel läuft...
-                                </>
-                            ) : (
-                                <>
-                                    <Play className="button-icon" />
-                                    Spiel starten!
-                                </>
-                            )}
-                        </button>
-
-                        {/* Der "Spiel abbrechen"-Button wird nur gerendert, wenn das Spiel gestartet ist */}
-                        {gameStarted && (
+                        {/* Container für die Start/Stop-Aktionsbuttons */}
+                        <div className="button-container">
                             <button
-                                className="button button-stop"
-                                onClick={onStopGame}
+                                className={`button button-start ${gameStarted ? 'disabled' : ''}`}
+                                onClick={onStartGame}
+                                disabled={gameStarted} // Button wird deaktiviert, wenn das Spiel läuft
                             >
-                                🛑 Spiel abbrechen
+                                {/* Bedingte Anzeige: Text ändert sich, je nachdem ob das Spiel läuft */}
+                                {gameStarted ? (
+                                    <>
+                                        <div className="spin-animation">⚡</div>
+                                        Spiel läuft...
+                                    </>
+                                ) : (
+                                    <>
+                                        <Play className="button-icon"/>
+                                        Spiel starten!
+                                    </>
+                                )}
                             </button>
-                        )}
+
+                            {/* Der "Spiel abbrechen"-Button wird nur gerendert, wenn das Spiel gestartet ist */}
+                            {gameStarted && (
+                                <button
+                                    className="button button-stop"
+                                    onClick={onStopGame}
+                                >
+                                    🛑 Spiel abbrechen
+                                </button>
+                            )}
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
-    );
-};
+            );
+            };
 
-export default ConfigurationPanel;
+            export default ConfigurationPanel;

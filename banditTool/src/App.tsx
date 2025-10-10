@@ -17,7 +17,7 @@ const MultiArmedBanditApp = () => {
         numActions: 5,
         numIterations: 10,
         banditType: 'bernoulli',
-        algorithm: 'greedy'
+        algorithms: []
     });
 
     // 2. Ein Ref, um eine Referenz auf das DOM-Element des Spielbereichs zu erhalten.
@@ -32,7 +32,7 @@ const MultiArmedBanditApp = () => {
         stopGame,
         isGameComplete,
         notification,
-        algorithmState
+        algorithmStates
     } = useGameLogic(config);
 
     /**
@@ -70,9 +70,8 @@ const MultiArmedBanditApp = () => {
                         />
                     </div>
 
-                    {/* Bedingtes Rendern: Der Spiel- und Chart-Bereich wird nur angezeigt, wenn das Spiel läuft. */}
-                    {gameState.isPlaying && (
-                        // Das Ref wird an diesen Container gebunden, damit wir zu ihm scrollen können.
+                    {/* Der 'output-container' rendert jetzt auch, wenn das Spiel beendet ist, um die finalen Charts zu zeigen */}
+                    {(gameState.isPlaying || isGameComplete) && (
                         <div className="output-container" ref={gameAreaRef}>
                             <GameInterface
                                 gameState={gameState}
@@ -80,7 +79,8 @@ const MultiArmedBanditApp = () => {
                                 onDrugChoice={handleDrugChoice}
                                 isGameComplete={isGameComplete}
                                 notification={notification}
-                                algorithmState={algorithmState}
+                                // GEÄNDERT: 'algorithmState' wird zu 'algorithmStates'
+                                algorithmStates={algorithmStates}
                             />
                             <PerformanceChart
                                 algorithmPerformance={algorithmPerformance}
