@@ -1,49 +1,40 @@
 import { useState, useRef } from 'react';
-import { Header } from './components/header';
-import { InfoBox } from './components/infoBox';
-import ConfigurationPanel from './components/configuration';
-import GameInterface from './components/game';
-import PerformanceChart from './components/performanceChart';
+import { Header } from './components/header.tsx';
+import { InfoBox } from './components/infoBox.tsx';
+import { ConfigPanel } from './components/configuration.tsx';
+import { GameArea } from './components/game.tsx';
 import { useGameLogic } from './hooks/useGameLogic';
 import "./App.css";
 
-/**
- * Die Hauptkomponente der Multi-Armed Bandit Anwendung.
- * Sie orchestriert den Zustand und setzt alle UI-Komponenten zusammen.
- */
-const MultiArmedBanditApp = () => {
-    // 1. Zustand für die Spielkonfiguration. Wird hier gehalten und nach unten weitergegeben.
+// Definieren des Typs für Algorithmen für Typsicherheit
+type AlgorithmType = "greedy" | "epsilon-greedy" | "random";
+
+const App = () => {
+    // 1. Zustand für die Spielkonfiguration mit initialen Werten
     const [config, setConfig] = useState({
         numActions: 5,
         numIterations: 10,
-        banditType: 'bernoulli',
-        algorithms: []
+        banditType: 'bernoulli' as 'bernoulli' | 'gaussian',
+        algorithms: [] as AlgorithmType[]
     });
 
-    // 2. Ein Ref, um eine Referenz auf das DOM-Element des Spielbereichs zu erhalten.
-    const gameAreaRef = useRef(null);
+    // 2. Ref für das Scroll-Verhalten zum Spielbereich
+    const gameAreaRef = useRef<HTMLDivElement>(null);
 
-    // 3. Aufruf des Custom Hooks, der die gesamte Spiellogik und den Spielzustand verwaltet.
+    // 3. Der useGameLogic Hook ist die zentrale Logik-Einheit
     const {
         gameState,
         algorithmPerformance,
         handleDrugChoice,
-        startGame: startLogic, // startLogic ist die originale Start-Funktion aus dem Hook
-        stopGame,
+        startGame: startLogic,
+        stopGame: stopLogic,
         isGameComplete,
-        notification,
         algorithmStates
     } = useGameLogic(config);
 
-    /**
-     * Eine Wrapper-Funktion, die das Spiel startet UND danach zum Spielbereich scrollt.
-     */
-    const startGameAndScroll = () => {
-        // Zuerst die Logik zum Starten des Spiels aufrufen.
+    // Start-Funktion mit Scroll-Logik
+    const startGame = () => {
         startLogic();
-
-        // Mit einer kleinen Verzögerung wird zum Spielbereich gescrollt.
-        // Die Verzögerung gibt React Zeit, das GameInterface zu rendern.
         setTimeout(() => {
             gameAreaRef.current?.scrollIntoView({
                 behavior: 'smooth',
@@ -52,46 +43,45 @@ const MultiArmedBanditApp = () => {
         }, 100);
     };
 
+    // Stop-Funktion, die auch das Spiel zurücksetzt
+    const stopGame = () => {
+        stopLogic();
+        // Optional: Nach oben scrollen
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    // Das Spiel gilt als "gestartet", wenn es läuft ODER beendet ist (um die Ergebnisse anzuzeigen)
+    const gameHasBeenStarted = gameState.isPlaying || isGameComplete;
+
     return (
         <div className="app-container">
             <Header />
             <main className="main-container">
                 <InfoBox />
+                <ConfigPanel
+                    config={config}
+                    setConfig={setConfig}
+                    onStartGame={startGame}
+                    onStopGame={stopGame}
+                    gameStarted={gameState.isPlaying}
+                />
 
-                <div className="content-container">
-                    <div className="configuration-container">
-                        {/* Die Konfigurations-Komponente erhält Props, um den Zustand zu lesen und zu ändern. */}
-                        <ConfigurationPanel
+                {/* Der Spielbereich wird gerendert, sobald das Spiel gestartet wurde */}
+                {gameHasBeenStarted && (
+                    <div ref={gameAreaRef}>
+                        <GameArea
+                            gameState={gameState}
                             config={config}
-                            setConfig={setConfig}
-                            onStartGame={startGameAndScroll} // Die Scroll-Funktion wird hier übergeben
-                            onStopGame={stopGame}
-                            gameStarted={gameState.isPlaying}
+                            onBeanClick={handleDrugChoice}
+                            isGameComplete={isGameComplete}
+                            algorithmPerformance={algorithmPerformance}
+                            algorithmStates={algorithmStates}
                         />
                     </div>
-
-                    {/* Der 'output-container' rendert jetzt auch, wenn das Spiel beendet ist, um die finalen Charts zu zeigen */}
-                    {(gameState.isPlaying || isGameComplete) && (
-                        <div className="output-container" ref={gameAreaRef}>
-                            <GameInterface
-                                gameState={gameState}
-                                config={config}
-                                onDrugChoice={handleDrugChoice}
-                                isGameComplete={isGameComplete}
-                                notification={notification}
-                                // GEÄNDERT: 'algorithmState' wird zu 'algorithmStates'
-                                algorithmStates={algorithmStates}
-                            />
-                            <PerformanceChart
-                                algorithmPerformance={algorithmPerformance}
-                                config={config}
-                            />
-                        </div>
-                    )}
-                </div>
+                )}
             </main>
         </div>
     );
 };
 
-export default MultiArmedBanditApp;
+export default App;
