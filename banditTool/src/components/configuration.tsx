@@ -8,7 +8,9 @@ import {
 } from "lucide-react";
 import './configuration.css';
 
-// Die Typen aus deiner Logik
+// ==================================================================
+// Typ-Definitionen
+// ==================================================================
 type AlgorithmType = "greedy" | "epsilon-greedy" | "random";
 
 interface Config {
@@ -18,6 +20,10 @@ interface Config {
     algorithms: AlgorithmType[];
 }
 
+/**
+ * Props für die ConfigPanel-Komponente.
+ * Definiert die Daten und Callbacks, die von der übergeordneten Komponente (App.tsx) bereitgestellt werden.
+ */
 interface ConfigPanelProps {
     config: Config;
     setConfig: (config: Config) => void;
@@ -26,6 +32,14 @@ interface ConfigPanelProps {
     gameStarted: boolean;
 }
 
+// ==================================================================
+// Implementierung
+// ==================================================================
+
+/**
+ * Eine "Controlled Component" zur Darstellung und Bearbeitung der Spiel-Konfiguration.
+ * Sie empfängt den aktuellen Zustand über Props und meldet Änderungen über Callbacks an die Elternkomponente zurück.
+ */
 export function ConfigPanel({
                                 config,
                                 setConfig,
@@ -34,8 +48,14 @@ export function ConfigPanel({
                                 gameStarted,
                             }: ConfigPanelProps) {
 
-    // Angepasste Handler, die das config-Objekt aktualisieren
+    /**
+     * Allgemeiner Handler für Konfigurationsänderungen (Slider, Toggles).
+     * Stoppt das laufende Spiel, bevor eine Änderung vorgenommen wird.
+     * @param {keyof Config} field - Das zu ändernde Feld im Config-Objekt.
+     * @param {any} value - Der neue Wert.
+     */
     const handleConfigChange = (field: keyof Config, value: any) => {
+        if(gameStarted) onStopGame();
         const parsedValue = typeof config[field] === 'number' ? parseInt(value, 10) : value;
         if (field === 'numActions' && (parsedValue < 1 || parsedValue > 10)) return;
         if (field === 'numIterations' && (parsedValue < 1 || parsedValue > 50)) return;
@@ -43,6 +63,11 @@ export function ConfigPanel({
         setConfig({ ...config, [field]: parsedValue });
     };
 
+    /**
+     * Handler zum Hinzufügen oder Entfernen eines Algorithmus aus der Konfiguration.
+     * Stoppt ebenfalls das laufende Spiel, bevor eine Änderung vorgenommen wird.
+     * @param {AlgorithmType} algorithm - Der umzuschaltende Algorithmus.
+     */
     const handleAlgorithmToggle = (algorithm: AlgorithmType) => {
         const currentAlgorithms = config.algorithms;
         if (currentAlgorithms.includes(algorithm)) {
@@ -55,6 +80,7 @@ export function ConfigPanel({
         }
     };
 
+    // Statisches Mapping-Objekt für UI-Informationen der Algorithmen.
     const algorithmInfo: Record<AlgorithmType, { description: string; icon: React.ReactNode }> = {
         greedy: {
             description: "Wählt immer die aktuell beste bekannte Kaffeebohne aus.",
