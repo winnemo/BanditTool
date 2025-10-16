@@ -9,9 +9,6 @@ import { generateDrugProbabilities, simulateDrugOutcome, initializeDrugStats } f
 // Definiert die möglichen Namen der Algorithmen
 type AlgorithmType = 'greedy' | 'epsilon-greedy' | 'random';
 
-//Flexibler Type für Wahrscheinlchkeiten
-type BanditProbabilities = number[] | { mean: number; std: number; N: number };
-
 // Definiert die Struktur des Konfigurationsobjekts
 interface Config {
     numActions: number;
@@ -67,7 +64,7 @@ export const useGameLogic = (config: Config) => {
         isPlaying: false,
         drugStats: {},
     });
-    const [drugProbabilities, setDrugProbabilities] = useState<BanditProbabilities>([]);
+
     const [algorithmPerformance, setAlgorithmPerformance] = useState<PerformanceDataPoint[]>([]);
     const [notification, setNotification] = useState<string | null>(null);
     const [algorithmStates, setAlgorithmStates] = useState<AlgorithmState[]>([]);
@@ -99,21 +96,34 @@ export const useGameLogic = (config: Config) => {
         setNotification(null);
     }, [config.numActions]);
 
+    const [outcomes, setOutcomes] = useState<boolean[][]>([]);
+
     useEffect(() => {
         const probs = generateDrugProbabilities(config.numActions, config.banditType);
-        setDrugProbabilities(probs);
+
+        const preGeneratedOutcomes: boolean[][] = [];
+        for (let i = 0; i < config.numIterations; i++) {
+            const roundOutcomes: boolean[] = [];
+            for (let j = 0; j < config.numActions; j++) {
+                roundOutcomes.push(simulateDrugOutcome(j, probs, config.banditType));
+            }
+            preGeneratedOutcomes.push(roundOutcomes);
+        }
+        setOutcomes(preGeneratedOutcomes);
+
         resetGame();
-    }, [config.numActions, config.banditType, resetGame]);
+    }, [config.numActions, config.banditType, config.numIterations, resetGame]);
 
-    const isMaxAttemptsReached = gameState.currentPatient >= config.numIterations;
-
+    const isMaxAttemptsReached = gameState.currentPatient >= config.numIterations
     // Parameter 'drugIndex' ist jetzt getypt
     const handleDrugChoice = (drugIndex: number) => {
 
-        if (!gameState.isPlaying || isMaxAttemptsReached) return;
+        if (!gameState.isPlaying || isMaxAttemptsReached || !outcomes.length) return;
+        const patientIndex = gameState.currentPatient;
+
         const newCurrentPatient = gameState.currentPatient + 1;
 
-        const playerSuccess = simulateDrugOutcome(drugIndex, drugProbabilities, config.banditType);
+        const playerSuccess = outcomes[patientIndex][drugIndex];
         const newSavedLives = gameState.savedLives + (playerSuccess ? 1 : 0);
         const newDrugStats = { ...gameState.drugStats };
         newDrugStats[`drug${drugIndex}`].attempts++;
@@ -130,7 +140,7 @@ export const useGameLogic = (config: Config) => {
 
             const choice = algorithms[algoName](currentAlgoStats, config.numActions);
 
-            const success = simulateDrugOutcome(choice, drugProbabilities, config.banditType);
+            const success = outcomes[patientIndex][choice];
 
             const newStatsForAlgo = { ...currentAlgoStats };
             newStatsForAlgo[`drug${choice}`].attempts++;

@@ -20,6 +20,7 @@ const App = () => {
 
     // 2. Ref für das Scroll-Verhalten zum Spielbereich
     const gameAreaRef = useRef<HTMLDivElement>(null);
+    const configPanelRef = useRef<HTMLDivElement>(null);
 
     // 3. Der useGameLogic Hook ist die zentrale Logik-Einheit
     const {
@@ -46,12 +47,14 @@ const App = () => {
     // Stop-Funktion, die auch das Spiel zurücksetzt
     const stopGame = () => {
         stopLogic();
-        // Optional: Nach oben scrollen
-        window.scrollTo({ top: 0, behavior: 'smooth' });
+        configPanelRef.current?.scrollIntoView({
+            behavior: 'smooth',
+            block: 'start',
+        });
     }
 
     // Das Spiel gilt als "gestartet", wenn es läuft ODER beendet ist (um die Ergebnisse anzuzeigen)
-    const gameHasBeenStarted = gameState.isPlaying || isGameComplete;
+    const gameHasBeenStarted = gameState.isPlaying; // || isGameComplete;
 
     return (
         <div className="app-container">
