@@ -25,7 +25,7 @@ interface PerformanceDataPoint {
 interface AlgorithmState {
     name: AlgorithmType;
     choice: number;
-    success: boolean | null;
+    reward: number | boolean | null;
 }
 
 interface GameAreaProps {
@@ -35,6 +35,7 @@ interface GameAreaProps {
     isGameComplete: boolean;
     algorithmPerformance: PerformanceDataPoint[];
     algorithmStates: AlgorithmState[];
+    lastPlayerReward: number | null;
 }
 
 // Benutzerdefinierter Tooltip für den Graphen (aus deinem alten Projekt übernommen)
@@ -71,6 +72,7 @@ export function GameArea({
                              isGameComplete,
                              algorithmPerformance,
                              algorithmStates,
+                             lastPlayerReward,
                          }: GameAreaProps) {
 
     // Prüfen, ob die Algorithmen bereits eine Wahl getroffen haben in dieser Runde
@@ -117,10 +119,17 @@ export function GameArea({
 
                         {isGameComplete && (
                             <div className="game-complete-message">
-                                <Trophy className="complete-icon" />
+                                <Trophy className="complete-icon"/>
                                 <p>Spiel beendet! Sehr gut gemacht!</p>
                                 <p className="score-text">
-                                    Dein finaler Punktestand: {gameState.savedLives} / {config.numIterations}
+                                    {config.banditType === 'bernoulli'
+                                        ? 'Dein finaler Punktestand'
+                                        : 'Deine finale Ø Bewertung'
+                                    }: {
+                                    config.banditType === 'bernoulli'
+                                        ? gameState.savedLives.toFixed(0)
+                                        : (gameState.savedLives / config.numIterations).toFixed(1)
+                                }
                                 </p>
                             </div>
                         )}
@@ -136,8 +145,12 @@ export function GameArea({
                         <div className="cups-stats">
                             <Coffee className="cups-icon"/>
                             <div className="cups-info">
-                                <div className="cups-number">{gameState.savedLives}</div>
-                                <div className="cups-label">Punkte</div>
+                                <div className="cups-number">
+                                    {lastPlayerReward !== null
+                                        ? lastPlayerReward.toFixed(config.banditType === 'bernoulli' ? 0 : 1)
+                                        : '-'}
+                                </div>
+                                <div className="cups-label">Punkte in dieser Runde</div>
                             </div>
                         </div>
                     </div>
@@ -165,12 +178,17 @@ export function GameArea({
                                                         className="algo-name-tag">{formatAlgoName(state.name)}</strong>
                                                     <span>wählt Bohne {state.choice + 1}</span>
                                                 </div>
-                                                <div
-                                                    className={`algo-outcome ${state.success ? 'success' : 'failure'}`}>
-                                                    {state.success ? (
-                                                        <><Check className="outcome-icon"/> Erfolgreich</>
+                                                <div className="algo-outcome">
+                                                    {config.banditType === 'bernoulli' ? (
+                                                        //Bernoulli
+                                                        state.reward ? (
+                                                            <><Check className="outcome-icon success"/> Erfolgreich</>
+                                                        ) : (
+                                                            <><X className="outcome-icon failure"/> Misserfolg</>
+                                                        )
                                                     ) : (
-                                                        <><X className="outcome-icon"/> Misserfolg</>
+                                                        // Gauss
+                                                        <strong>Bewertung: {typeof state.reward === 'number' ? state.reward.toFixed(1) : 'N/A'}</strong>
                                                     )}
                                                 </div>
                                             </div>

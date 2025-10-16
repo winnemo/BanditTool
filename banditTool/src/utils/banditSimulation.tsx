@@ -13,8 +13,8 @@ export const generateDrugProbabilities = (numActions, banditType) => {
             // Für Gaussian-Banditen: ein Mittelwert von 10 bis 90 und eine Standardabweichung von 5 bis 20.
         } else if(banditType == 'gaussian') {
             probs.push({
-                mean: Math.random() * 80 + 10,
-                std: Math.random() * 15 + 5
+                mean: Math.random() * 6 + 3, // Werte 3 bis 9
+                std:  Math.random() * 1.0 + 0.5 // Werte 0.5 bis 1.5
             });
         } else {
             throw new Error(`Unbekannter Bandit-Typ: "${banditType}"`)
@@ -56,7 +56,8 @@ export const simulateDrugOutcome = (drugIndex, drugProbabilities, banditType) =>
         // Ziehe einen Wert aus der Normalverteilung.
         const outcome = getGaussianRandom(mean, std);
         // Erfolg ist definiert als ein Ergebnis über dem Schwellenwert 50.
-        return outcome > 50;
+        const clampedOutcome = Math.max(0, Math.min(10, outcome));
+        return Math.round(clampedOutcome * 10) / 10;
     } else {
         throw new Error(`Unbekannter Bandit-Typ: "${banditType}"`);
     }
@@ -70,7 +71,7 @@ export const simulateDrugOutcome = (drugIndex, drugProbabilities, banditType) =>
 export const initializeDrugStats = (numActions) => {
     const stats = {};
     for (let i = 0; i < numActions; i++) {
-        stats[`drug${i}`] = { attempts: 0, successes: 0 };
+        stats[`drug${i}`] = { attempts: 0, sumOfRewards: 0 };
     }
     return stats;
 };

@@ -30,7 +30,8 @@ const App = () => {
         startGame: startLogic,
         stopGame: stopLogic,
         isGameComplete,
-        algorithmStates
+        algorithmStates,
+        lastPlayerReward
     } = useGameLogic(config);
 
     // Start-Funktion mit Scroll-Logik
@@ -79,6 +80,7 @@ const App = () => {
                             isGameComplete={isGameComplete}
                             algorithmPerformance={algorithmPerformance}
                             algorithmStates={algorithmStates}
+                            lastPlayerReward={lastPlayerReward}
                         />
                     </div>
                 )}

@@ -18,7 +18,7 @@ interface Config {
 
 interface DrugStat {
     attempts: number;
-    successes: number;
+    sumOfRewards: number;
 }
 
 interface DrugStats {
@@ -35,7 +35,7 @@ interface GameState {
 interface AlgorithmState {
     name: AlgorithmType;
     choice: number;
-    success: boolean | null;
+    reward: number | boolean | null;
 }
 
 interface PerformanceDataPoint {
@@ -73,7 +73,9 @@ export const useGameLogic = (config: Config) => {
     // Interne Statistiken der Algorithmen für deren Entscheidungsfindung
     const [algorithmStats, setAlgorithmStats] = useState<{ [key in AlgorithmType]?: DrugStats }>({});
     // Vorausberechnete Ergebnis-Matrix für eine faire und reproduzierbare Simulation pro Spiel
-    const [outcomes, setOutcomes] = useState<boolean[][]>([]);
+    const [outcomes, setOutcomes] = useState<(boolean | number)[][]>([]);
+
+    const [lastPlayerReward, setLastPlayerReward] = useState<number | null>(0);
 
     /**
      * Setzt alle spielrelevanten Zustände auf ihre initialen Werte zurück.
@@ -101,6 +103,7 @@ export const useGameLogic = (config: Config) => {
         }));
         setAlgorithmStates(initialAlgoStates);
         setAlgorithmPerformance([]);
+        setLastPlayerReward(0);
         setNotification(null);
     }, [config.numActions]);
 
@@ -123,10 +126,12 @@ export const useGameLogic = (config: Config) => {
 
         // Spieler-Logik
         const playerSuccess = outcomes[patientIndex][drugIndex];
-        const newSavedLives = gameState.savedLives + (playerSuccess ? 1 : 0);
+        const numericReward = typeof playerSuccess === 'boolean' ? (playerSuccess ? 1 : 0) : playerSuccess;
+        setLastPlayerReward(numericReward);
+        const newSavedLives = gameState.savedLives + playerSuccess;
         const newDrugStats = { ...gameState.drugStats };
         newDrugStats[`drug${drugIndex}`].attempts++;
-        if (playerSuccess) newDrugStats[`drug${drugIndex}`].successes++;
+        newDrugStats[`drug${drugIndex}`].sumOfRewards += playerSuccess;
 
         // Algorithmen-Logik
         const newAlgorithmStates: AlgorithmState[] = [];
@@ -138,15 +143,15 @@ export const useGameLogic = (config: Config) => {
             if (!currentAlgoStats) return;
 
             const choice = algorithms[algoName](currentAlgoStats, config.numActions);
-            const success = outcomes[patientIndex][choice];
+            const reward = outcomes[patientIndex][choice];
 
             const newStatsForAlgo = { ...currentAlgoStats };
             newStatsForAlgo[`drug${choice}`].attempts++;
-            if (success) newStatsForAlgo[`drug${choice}`].successes++;
+            newStatsForAlgo[`drug${choice}`].sumOfRewards += reward;
             newOverallAlgoStats[algoName] = newStatsForAlgo;
 
-            newAlgorithmStates.push({ name: algoName, choice, success });
-            performanceUpdate[algoName] = success ? 1 : 0;
+            newAlgorithmStates.push({ name: algoName, choice, reward });
+            performanceUpdate[algoName] = typeof reward === 'boolean' ? (reward ? 1 : 0) : reward;
         });
 
         // State-Updates
@@ -217,5 +222,6 @@ export const useGameLogic = (config: Config) => {
         isGameComplete,
         notification,
         algorithmStates,
+        lastPlayerReward,
     };
 };
