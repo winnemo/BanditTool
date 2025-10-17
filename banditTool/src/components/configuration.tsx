@@ -1,240 +1,467 @@
-import { render, screen, fireEvent } from '@testing-library/react';
-import { describe, it, expect, beforeEach, vi } from 'vitest';
-import '@testing-library/jest-dom';
-// Name der Komponente an die neue Datei angepasst
-import { ConfigPanel } from "../components/configuration.tsx";
+import {
 
-describe('ConfigPanel', () => {
-    // Mock-Funktionen bleiben gleich
-    const mockSetConfig = vi.fn();
-    const mockOnStartGame = vi.fn();
-    const mockOnStopGame = vi.fn();
+    Settings,
 
-    // defaultConfig an die neue Struktur angepasst (algorithms ist jetzt ein Array)
-    const defaultConfig = {
-        banditType: 'bernoulli',
-        numActions: 5,
-        numIterations: 10,
-        algorithms: ['greedy'] // Startet mit einem ausgewählten Algorithmus
+    Play,
+
+    Square,
+
+    BarChart3,
+
+    TrendingUp,
+
+    Shuffle,
+
+} from "lucide-react";
+
+import './configuration.css';
+
+
+
+// ==================================================================
+
+// Typ-Definitionen
+
+// ==================================================================
+
+type AlgorithmType = "greedy" | "epsilon-greedy" | "random";
+
+
+
+interface Config {
+
+    numActions: number;
+
+    numIterations: number;
+
+    banditType: "bernoulli" | "gaussian";
+
+    algorithms: AlgorithmType[];
+
+}
+
+
+
+/**
+
+ * Props für die ConfigPanel-Komponente.
+
+ * Definiert die Daten und Callbacks, die von der übergeordneten Komponente (App.tsx) bereitgestellt werden.
+
+ */
+
+interface ConfigPanelProps {
+
+    config: Config;
+
+    setConfig: (config: Config) => void;
+
+    onStartGame: () => void;
+
+    onStopGame: () => void;
+
+    gameStarted: boolean;
+
+}
+
+
+
+// ==================================================================
+
+// Implementierung
+
+// ==================================================================
+
+
+
+/**
+
+ * Eine "Controlled Component" zur Darstellung und Bearbeitung der Spiel-Konfiguration.
+
+ * Sie empfängt den aktuellen Zustand über Props und meldet Änderungen über Callbacks an die Elternkomponente zurück.
+
+ */
+
+export function ConfigPanel({
+
+                                config,
+
+                                setConfig,
+
+                                onStartGame,
+
+                                onStopGame,
+
+                                gameStarted,
+
+                            }: ConfigPanelProps) {
+
+
+
+    /**
+
+     * Allgemeiner Handler für Konfigurationsänderungen (Slider, Toggles).
+
+     * Stoppt das laufende Spiel, bevor eine Änderung vorgenommen wird.
+
+     * @param {keyof Config} field - Das zu ändernde Feld im Config-Objekt.
+
+     * @param {any} value - Der neue Wert.
+
+     */
+
+    const handleConfigChange = (field: keyof Config, value: any) => {
+
+        if(gameStarted) onStopGame();
+
+        const parsedValue = typeof config[field] === 'number' ? parseInt(value, 10) : value;
+
+        if (field === 'numActions' && (parsedValue < 1 || parsedValue > 10)) return;
+
+        if (field === 'numIterations' && (parsedValue < 1 || parsedValue > 50)) return;
+
+
+
+        setConfig({ ...config, [field]: parsedValue });
+
     };
 
-    beforeEach(() => {
-        vi.clearAllMocks();
-    });
 
-    describe('Rendering', () => {
-        it('sollte die Hauptüberschrift rendern', () => {
-            render(
-                <ConfigPanel
-                    config={defaultConfig}
-                    setConfig={mockSetConfig}
-                    onStartGame={mockOnStartGame}
-                    onStopGame={mockOnStopGame}
-                    gameStarted={false}
-                />
-            );
-            expect(screen.getByText('Spiel-Konfiguration')).toBeInTheDocument();
-        });
 
-        it('sollte die neuen, kompakten Labels anzeigen', () => {
-            render(
-                <ConfigPanel
-                    config={defaultConfig}
-                    setConfig={mockSetConfig}
-                    onStartGame={mockOnStartGame}
-                    onStopGame={mockOnStopGame}
-                    gameStarted={false}
-                />
-            );
-            // Tests an neue Labels angepasst
-            expect(screen.getByText('Bandit-Typ')).toBeInTheDocument();
-            expect(screen.getByText('Bohnen:')).toBeInTheDocument();
-            expect(screen.getByText('Versuche:')).toBeInTheDocument();
-            expect(screen.getByText('Wähle deine Gegner')).toBeInTheDocument();
-        });
-    });
+    /**
 
-    describe('Bandit-Typ Auswahl (Toggle Buttons)', () => {
-        it('sollte den "Bernoulli"-Button als aktiv anzeigen', () => {
-            render(
-                <ConfigPanel
-                    config={defaultConfig}
-                    setConfig={mockSetConfig}
-                    onStartGame={mockOnStartGame}
-                    onStopGame={mockOnStopGame}
-                    gameStarted={false}
-                />
-            );
-            const bernoulliButton = screen.getByRole('button', { name: 'Bernoulli' });
-            expect(bernoulliButton).toHaveClass('active');
-        });
+     * Handler zum Hinzufügen oder Entfernen eines Algorithmus aus der Konfiguration.
 
-        it('sollte setConfig aufrufen beim Klick auf den "Gaussian"-Button', () => {
-            render(
-                <ConfigPanel
-                    config={defaultConfig}
-                    setConfig={mockSetConfig}
-                    onStartGame={mockOnStartGame}
-                    onStopGame={mockOnStopGame}
-                    gameStarted={false}
-                />
-            );
-            const gaussianButton = screen.getByRole('button', { name: 'Gaussian' });
-            fireEvent.click(gaussianButton);
+     * Stoppt ebenfalls das laufende Spiel, bevor eine Änderung vorgenommen wird.
 
-            expect(mockSetConfig).toHaveBeenCalledWith({
-                ...defaultConfig,
-                banditType: 'gaussian'
-            });
-        });
-    });
+     * @param {AlgorithmType} algorithm - Der umzuschaltende Algorithmus.
 
-    describe('Parameter-Slider (Bohnen & Versuche)', () => {
-        it('sollte die korrekten Werte in den Slidern und Inputs anzeigen', () => {
-            render(
-                <ConfigPanel
-                    config={defaultConfig}
-                    setConfig={mockSetConfig}
-                    onStartGame={mockOnStartGame}
-                    onStopGame={mockOnStopGame}
-                    gameStarted={false}
-                />
-            );
-            const sliders = screen.getAllByRole('slider');
-            expect(sliders[0]).toHaveValue('5'); // Bohnen
-            expect(sliders[1]).toHaveValue('10'); // Versuche
+     */
 
-            const numberInputs = screen.getAllByRole('spinbutton');
-            expect(numberInputs[0]).toHaveValue(5); // Bohnen
-            expect(numberInputs[1]).toHaveValue(10); // Versuche
-        });
+    const handleAlgorithmToggle = (algorithm: AlgorithmType) => {
 
-        it('sollte setConfig beim Ändern des Bohnen-Sliders aufrufen', () => {
-            render(
-                <ConfigPanel
-                    config={defaultConfig}
-                    setConfig={mockSetConfig}
-                    onStartGame={mockOnStartGame}
-                    onStopGame={mockOnStopGame}
-                    gameStarted={false}
-                />
-            );
-            const slider = screen.getAllByRole('slider')[0];
-            fireEvent.change(slider, { target: { value: '8' } });
+        const currentAlgorithms = config.algorithms;
 
-            expect(mockSetConfig).toHaveBeenCalledWith({
-                ...defaultConfig,
-                numActions: 8
-            });
-        });
-    });
+        if (currentAlgorithms.includes(algorithm)) {
 
-    describe('Algorithmus Auswahl (Karten)', () => {
-        it('sollte die "Greedy"-Karte als ausgewählt rendern', () => {
-            render(
-                <ConfigPanel
-                    config={defaultConfig}
-                    setConfig={mockSetConfig}
-                    onStartGame={mockOnStartGame}
-                    onStopGame={mockOnStopGame}
-                    gameStarted={false}
-                />
-            );
-            // Finde die Karte über den Titel-Text
-            const greedyCard = screen.getByText('Greedy').closest('.algorithm-card');
-            expect(greedyCard).toHaveClass('selected');
-        });
+            setConfig({
 
-        it('sollte einen Algorithmus zur Auswahl hinzufügen beim Klick auf eine nicht ausgewählte Karte', () => {
-            const configWithoutRandom = { ...defaultConfig, algorithms: ['greedy'] };
-            render(
-                <ConfigPanel
-                    config={configWithoutRandom}
-                    setConfig={mockSetConfig}
-                    onStartGame={mockOnStartGame}
-                    onStopGame={mockOnStopGame}
-                    gameStarted={false}
-                />
-            );
-            const randomCard = screen.getByText('Random').closest('.algorithm-card');
-            fireEvent.click(randomCard!);
+                ...config,
 
-            expect(mockSetConfig).toHaveBeenCalledWith({
-                ...configWithoutRandom,
-                algorithms: ['greedy', 'random']
-            });
-        });
+                algorithms: currentAlgorithms.filter((a) => a !== algorithm),
 
-        it('sollte einen Algorithmus aus der Auswahl entfernen beim Klick auf eine ausgewählte Karte', () => {
-            const configWithTwo = { ...defaultConfig, algorithms: ['greedy', 'random'] };
-            render(
-                <ConfigPanel
-                    config={configWithTwo}
-                    setConfig={mockSetConfig}
-                    onStartGame={mockOnStartGame}
-                    onStopGame={mockOnStopGame}
-                    gameStarted={false}
-                />
-            );
-            const greedyCard = screen.getByText('Greedy').closest('.algorithm-card');
-            fireEvent.click(greedyCard!);
+            })
 
-            expect(mockSetConfig).toHaveBeenCalledWith({
-                ...configWithTwo,
-                algorithms: ['random'] // 'greedy' wurde entfernt
-            });
-        });
-    });
+        } else {
 
-    describe('Spiel Steuerung und Interaktionen', () => {
-        it('sollte onStartGame aufrufen beim Klick auf Start-Button', () => {
-            render(
-                <ConfigPanel
-                    config={defaultConfig}
-                    setConfig={mockSetConfig}
-                    onStartGame={mockOnStartGame}
-                    onStopGame={mockOnStopGame}
-                    gameStarted={false}
-                />
-            );
-            fireEvent.click(screen.getByText('Spiel starten!'));
-            expect(mockOnStartGame).toHaveBeenCalledTimes(1);
-        });
+            setConfig({ ...config, algorithms: [...currentAlgorithms, algorithm] });
 
-        it('sollte onStopGame aufrufen beim Klick auf Stop-Button', () => {
-            render(
-                <ConfigPanel
-                    config={defaultConfig}
-                    setConfig={mockSetConfig}
-                    onStartGame={mockOnStartGame}
-                    onStopGame={mockOnStopGame}
-                    gameStarted={true}
-                />
-            );
-            fireEvent.click(screen.getByText('Spiel abbrechen'));
-            expect(mockOnStopGame).toHaveBeenCalledTimes(1);
-        });
+        }
 
-        it('sollte onStopGame aufrufen, wenn eine Konfiguration geändert wird, während das Spiel läuft', () => {
-            render(
-                <ConfigPanel
-                    config={defaultConfig}
-                    setConfig={mockSetConfig}
-                    onStartGame={mockOnStartGame}
-                    onStopGame={mockOnStopGame}
-                    gameStarted={true} // Spiel läuft
-                />
-            );
-            const gaussianButton = screen.getByRole('button', { name: 'Gaussian' });
-            fireEvent.click(gaussianButton);
+    };
 
-            // Zuerst wird das Spiel gestoppt...
-            expect(mockOnStopGame).toHaveBeenCalledTimes(1);
-            // ...dann wird die Konfiguration geändert.
-            expect(mockSetConfig).toHaveBeenCalledWith({
-                ...defaultConfig,
-                banditType: 'gaussian'
-            });
-        });
-    });
-});
+
+
+// Statisches Mapping-Objekt für UI-Informationen der Algorithmen.
+
+    const algorithmInfo: Record<AlgorithmType, { description: string; icon: React.ReactNode }> = {
+
+        greedy: {
+
+            description: "Wählt immer die aktuell beste bekannte Kaffeebohne aus.",
+
+            icon: <BarChart3 className="algorithm-card-icon" />,
+
+        },
+
+        'epsilon-greedy': {
+
+            description: "Wählt meistens die beste Bohne, aber manchmal auch zufällig, um neue Optionen zu erkunden.",
+
+            icon: <TrendingUp className="algorithm-card-icon" />,
+
+        },
+
+        random: {
+
+            description: "Reiner Zufall: Dient als gute Vergleichsbasis.",
+
+            icon: <Shuffle className="algorithm-card-icon" />,
+
+        },
+
+    };
+
+
+
+    return (
+
+        <div className="card">
+
+            <div className="card-header">
+
+                <h2 className="card-title-main">
+
+                    <Settings className="config-icon-main" /> Spiel-Konfiguration
+
+                </h2>
+
+            </div>
+
+            <div className="card-content">
+
+                <div className="config-section">
+
+                    <div className="config-params-grid">
+
+                        <div className="config-param-box">
+
+                            <label className="config-label-compact">Bandit-Typ</label>
+
+                            <div className="toggle-group">
+
+                                <button
+
+                                    type="button"
+
+                                    className={`toggle-button ${config.banditType === "bernoulli" ? "active" : ""}`}
+
+                                    onClick={() => handleConfigChange('banditType', 'bernoulli')}
+
+                                >
+
+                                    Bernoulli
+
+                                </button>
+
+                                <button
+
+                                    type="button"
+
+                                    className={`toggle-button ${config.banditType === "gaussian" ? "active" : ""}`}
+
+                                    onClick={() => handleConfigChange('banditType', 'gaussian')}
+
+                                >
+
+                                    Gaussian
+
+                                </button>
+
+                            </div>
+
+                            <p className="help-text-compact">
+
+                                {config.banditType === "bernoulli"
+
+                                    ? "💡 Binäre Belohnungen: 0 oder 1 Punkt."
+
+                                    : "💡 Kontinuierliche Belohnungen aus Normalverteilung."}
+
+                            </p>
+
+                        </div>
+
+
+
+                        <div className="config-param-box config-param-box-wide">
+
+                            <div className="slider-row">
+
+                                <label className="config-label-compact">Bohnen:</label>
+
+                                <div className="slider-with-input">
+
+                                    <input
+
+                                        type="range"
+
+                                        className="slider"
+
+                                        value={config.numActions}
+
+                                        onChange={(e) => handleConfigChange('numActions', e.target.value)}
+
+                                        max={10} min={1} step={1}
+
+                                    />
+
+                                    <input
+
+                                        type="number"
+
+                                        className="number-input-compact"
+
+                                        value={config.numActions}
+
+                                        onChange={(e) => handleConfigChange('numActions', e.target.value)}
+
+                                        min={1} max={10}
+
+                                    />
+
+                                </div>
+
+                            </div>
+
+
+
+                            <div className="slider-row">
+
+                                <label className="config-label-compact">Versuche:</label>
+
+                                <div className="slider-with-input">
+
+                                    <input
+
+                                        type="range"
+
+                                        className="slider"
+
+                                        value={config.numIterations}
+
+                                        onChange={(e) => handleConfigChange('numIterations', e.target.value)}
+
+                                        max={50} min={1} step={1}
+
+                                    />
+
+                                    <input
+
+                                        type="number"
+
+                                        className="number-input-compact"
+
+                                        value={config.numIterations}
+
+                                        onChange={(e) => handleConfigChange('numIterations', e.target.value)}
+
+                                        min={1} max={50}
+
+                                    />
+
+                                </div>
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+
+
+                    <div className="config-section-group">
+
+                        <h3 className="config-section-title">
+
+                            <BarChart3 className="config-icon" /> Wähle deine Gegner
+
+                        </h3>
+
+                        <div className="algorithm-cards">
+
+                            {(["greedy", "epsilon-greedy", "random"] as AlgorithmType[]).map((algo) => (
+
+                                <div
+
+                                    key={algo}
+
+                                    className={`algorithm-card ${config.algorithms.includes(algo) ? "selected" : ""}`}
+
+                                    onClick={() => handleAlgorithmToggle(algo)}
+
+                                >
+
+                                    <div className="algorithm-card-header">
+
+                                        {algorithmInfo[algo].icon}
+
+                                        {config.algorithms.includes(algo) && (
+
+                                            <div className="algorithm-badge">Ausgewählt</div>
+
+                                        )}
+
+                                    </div>
+
+                                    <h3 className="algorithm-card-title">{algo.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase())}</h3>
+
+                                    <p className="algorithm-card-description">{algorithmInfo[algo].description}</p>
+
+                                </div>
+
+                            ))}
+
+                        </div>
+
+                        <p className="help-text help-text-centered">
+
+                            {config.algorithms.length === 0
+
+                                ? "Du trittst gegen niemanden an. Perfekt zum Üben!"
+
+                                : config.algorithms.length === 1
+
+                                    ? `Du trittst gegen ${config.algorithms[0].replace('-', ' ')} an.`
+
+                                    : `Du trittst gegen ${config.algorithms.length} Algorithmen an!`}
+
+                        </p>
+
+                    </div>
+
+
+
+                    <div className="button-container">
+
+                        <button
+
+                            className={`button button-start ${gameStarted ? "disabled" : ""}`}
+
+                            onClick={onStartGame}
+
+                            disabled={gameStarted}
+
+                        >
+
+                            {gameStarted ? (
+
+                                <>
+
+                                    <div className="spin-animation">⚡</div> Spiel läuft...
+
+                                </>
+
+                            ) : (
+
+                                <>
+
+                                    <Play className="button-icon" /> Spiel starten!
+
+                                </>
+
+                            )}
+
+                        </button>
+
+                        {gameStarted && (
+
+                            <button className="button button-stop" onClick={onStopGame}>
+
+                                <Square className="button-icon" /> Spiel abbrechen
+
+                            </button>
+
+                        )}
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    );
+
+}
