@@ -1,18 +1,21 @@
 import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import '@testing-library/jest-dom';
-import ConfigurationPanel from "../components/configuration.tsx";
+// Name der Komponente an die neue Datei angepasst
+import { ConfigPanel } from "../components/configuration.tsx";
 
-describe('ConfigurationPanel', () => {
+describe('ConfigPanel', () => {
+    // Mock-Funktionen bleiben gleich
     const mockSetConfig = vi.fn();
     const mockOnStartGame = vi.fn();
     const mockOnStopGame = vi.fn();
 
+    // defaultConfig an die neue Struktur angepasst (algorithms ist jetzt ein Array)
     const defaultConfig = {
         banditType: 'bernoulli',
         numActions: 5,
         numIterations: 10,
-        algorithm: 'greedy'
+        algorithms: ['greedy'] // Startet mit einem ausgewählten Algorithmus
     };
 
     beforeEach(() => {
@@ -22,7 +25,7 @@ describe('ConfigurationPanel', () => {
     describe('Rendering', () => {
         it('sollte die Hauptüberschrift rendern', () => {
             render(
-                <ConfigurationPanel
+                <ConfigPanel
                     config={defaultConfig}
                     setConfig={mockSetConfig}
                     onStartGame={mockOnStartGame}
@@ -30,13 +33,12 @@ describe('ConfigurationPanel', () => {
                     gameStarted={false}
                 />
             );
-
             expect(screen.getByText('Spiel-Konfiguration')).toBeInTheDocument();
         });
 
-        it('sollte alle Konfigurationsoptionen anzeigen', () => {
+        it('sollte die neuen, kompakten Labels anzeigen', () => {
             render(
-                <ConfigurationPanel
+                <ConfigPanel
                     config={defaultConfig}
                     setConfig={mockSetConfig}
                     onStartGame={mockOnStartGame}
@@ -44,47 +46,18 @@ describe('ConfigurationPanel', () => {
                     gameStarted={false}
                 />
             );
-
-            expect(screen.getByText(/Bandit-Typ/)).toBeInTheDocument();
-            expect(screen.getByText(/Anzahl verschiedener Bohnen/)).toBeInTheDocument();
-            expect(screen.getByText(/Anzahl Versuche/)).toBeInTheDocument();
-            expect(screen.getByText(/Algorithmus/)).toBeInTheDocument();
-        });
-
-        it('sollte den Start-Button anzeigen wenn Spiel nicht läuft', () => {
-            render(
-                <ConfigurationPanel
-                    config={defaultConfig}
-                    setConfig={mockSetConfig}
-                    onStartGame={mockOnStartGame}
-                    onStopGame={mockOnStopGame}
-                    gameStarted={false}
-                />
-            );
-
-            expect(screen.getByText('Spiel starten!')).toBeInTheDocument();
-        });
-
-        it('sollte den Stop-Button anzeigen wenn Spiel läuft', () => {
-            render(
-                <ConfigurationPanel
-                    config={defaultConfig}
-                    setConfig={mockSetConfig}
-                    onStartGame={mockOnStartGame}
-                    onStopGame={mockOnStopGame}
-                    gameStarted={true}
-                />
-            );
-
-            expect(screen.getByText(/Spiel läuft/)).toBeInTheDocument();
-            expect(screen.getByText(/Spiel abbrechen/)).toBeInTheDocument();
+            // Tests an neue Labels angepasst
+            expect(screen.getByText('Bandit-Typ')).toBeInTheDocument();
+            expect(screen.getByText('Bohnen:')).toBeInTheDocument();
+            expect(screen.getByText('Versuche:')).toBeInTheDocument();
+            expect(screen.getByText('Wähle deine Gegner')).toBeInTheDocument();
         });
     });
 
-    describe('Bandit-Typ Auswahl', () => {
-        it('sollte den korrekten Bandit-Typ anzeigen', () => {
+    describe('Bandit-Typ Auswahl (Toggle Buttons)', () => {
+        it('sollte den "Bernoulli"-Button als aktiv anzeigen', () => {
             render(
-                <ConfigurationPanel
+                <ConfigPanel
                     config={defaultConfig}
                     setConfig={mockSetConfig}
                     onStartGame={mockOnStartGame}
@@ -92,14 +65,13 @@ describe('ConfigurationPanel', () => {
                     gameStarted={false}
                 />
             );
-
-            const select = screen.getByDisplayValue('Bernoulli');
-            expect(select).toBeInTheDocument();
+            const bernoulliButton = screen.getByRole('button', { name: 'Bernoulli' });
+            expect(bernoulliButton).toHaveClass('active');
         });
 
-        it('sollte setConfig aufrufen beim Ändern des Bandit-Typs', () => {
+        it('sollte setConfig aufrufen beim Klick auf den "Gaussian"-Button', () => {
             render(
-                <ConfigurationPanel
+                <ConfigPanel
                     config={defaultConfig}
                     setConfig={mockSetConfig}
                     onStartGame={mockOnStartGame}
@@ -107,51 +79,20 @@ describe('ConfigurationPanel', () => {
                     gameStarted={false}
                 />
             );
-
-            const select = screen.getByDisplayValue('Bernoulli');
-            fireEvent.change(select, { target: { value: 'gaussian' } });
+            const gaussianButton = screen.getByRole('button', { name: 'Gaussian' });
+            fireEvent.click(gaussianButton);
 
             expect(mockSetConfig).toHaveBeenCalledWith({
                 ...defaultConfig,
                 banditType: 'gaussian'
             });
         });
-
-        it('sollte den korrekten Hilfetext für Bernoulli anzeigen', () => {
-            render(
-                <ConfigurationPanel
-                    config={defaultConfig}
-                    setConfig={mockSetConfig}
-                    onStartGame={mockOnStartGame}
-                    onStopGame={mockOnStopGame}
-                    gameStarted={false}
-                />
-            );
-
-            expect(screen.getByText(/Binäre Belohnungen/)).toBeInTheDocument();
-        });
-
-        it('sollte den korrekten Hilfetext für Gaussian anzeigen', () => {
-            const gaussianConfig = { ...defaultConfig, banditType: 'gaussian' };
-
-            render(
-                <ConfigurationPanel
-                    config={gaussianConfig}
-                    setConfig={mockSetConfig}
-                    onStartGame={mockOnStartGame}
-                    onStopGame={mockOnStopGame}
-                    gameStarted={false}
-                />
-            );
-
-            expect(screen.getByText(/Kontinuierliche Belohnungen/)).toBeInTheDocument();
-        });
     });
 
-    describe('Anzahl Aktionen (Bohnen)', () => {
-        it('sollte den aktuellen Wert anzeigen', () => {
+    describe('Parameter-Slider (Bohnen & Versuche)', () => {
+        it('sollte die korrekten Werte in den Slidern und Inputs anzeigen', () => {
             render(
-                <ConfigurationPanel
+                <ConfigPanel
                     config={defaultConfig}
                     setConfig={mockSetConfig}
                     onStartGame={mockOnStartGame}
@@ -159,92 +100,39 @@ describe('ConfigurationPanel', () => {
                     gameStarted={false}
                 />
             );
-
-            expect(screen.getByText(/Anzahl verschiedener Bohnen: 5/)).toBeInTheDocument();
-        });
-
-        it('sollte setConfig beim Ändern des Sliders aufrufen', () => {
-            render(
-                <ConfigurationPanel
-                    config={defaultConfig}
-                    setConfig={mockSetConfig}
-                    onStartGame={mockOnStartGame}
-                    onStopGame={mockOnStopGame}
-                    gameStarted={false}
-                />
-            );
-
-            const slider = screen.getAllByRole('slider')[0];
-            fireEvent.change(slider, { target: { value: '7' } });
-
-            expect(mockSetConfig).toHaveBeenCalledWith({
-                ...defaultConfig,
-                numActions: 7
-            });
-        });
-
-        it('sollte setConfig beim Ändern des Number-Inputs aufrufen', () => {
-            render(
-                <ConfigurationPanel
-                    config={defaultConfig}
-                    setConfig={mockSetConfig}
-                    onStartGame={mockOnStartGame}
-                    onStopGame={mockOnStopGame}
-                    gameStarted={false}
-                />
-            );
+            const sliders = screen.getAllByRole('slider');
+            expect(sliders[0]).toHaveValue('5'); // Bohnen
+            expect(sliders[1]).toHaveValue('10'); // Versuche
 
             const numberInputs = screen.getAllByRole('spinbutton');
-            const actionsInput = numberInputs[0];
-            fireEvent.change(actionsInput, { target: { value: '8' } });
+            expect(numberInputs[0]).toHaveValue(5); // Bohnen
+            expect(numberInputs[1]).toHaveValue(10); // Versuche
+        });
+
+        it('sollte setConfig beim Ändern des Bohnen-Sliders aufrufen', () => {
+            render(
+                <ConfigPanel
+                    config={defaultConfig}
+                    setConfig={mockSetConfig}
+                    onStartGame={mockOnStartGame}
+                    onStopGame={mockOnStopGame}
+                    gameStarted={false}
+                />
+            );
+            const slider = screen.getAllByRole('slider')[0];
+            fireEvent.change(slider, { target: { value: '8' } });
 
             expect(mockSetConfig).toHaveBeenCalledWith({
                 ...defaultConfig,
                 numActions: 8
             });
         });
-
-        it('sollte Werte außerhalb des Bereichs ignorieren (zu klein)', () => {
-            render(
-                <ConfigurationPanel
-                    config={defaultConfig}
-                    setConfig={mockSetConfig}
-                    onStartGame={mockOnStartGame}
-                    onStopGame={mockOnStopGame}
-                    gameStarted={false}
-                />
-            );
-
-            const numberInputs = screen.getAllByRole('spinbutton');
-            const actionsInput = numberInputs[0];
-            fireEvent.change(actionsInput, { target: { value: '0' } });
-
-            expect(mockSetConfig).not.toHaveBeenCalled();
-        });
-
-        it('sollte Werte außerhalb des Bereichs ignorieren (zu groß)', () => {
-            render(
-                <ConfigurationPanel
-                    config={defaultConfig}
-                    setConfig={mockSetConfig}
-                    onStartGame={mockOnStartGame}
-                    onStopGame={mockOnStopGame}
-                    gameStarted={false}
-                />
-            );
-
-            const numberInputs = screen.getAllByRole('spinbutton');
-            const actionsInput = numberInputs[0];
-            fireEvent.change(actionsInput, { target: { value: '11' } });
-
-            expect(mockSetConfig).not.toHaveBeenCalled();
-        });
     });
 
-    describe('Anzahl Iterationen (Versuche)', () => {
-        it('sollte den aktuellen Wert anzeigen', () => {
+    describe('Algorithmus Auswahl (Karten)', () => {
+        it('sollte die "Greedy"-Karte als ausgewählt rendern', () => {
             render(
-                <ConfigurationPanel
+                <ConfigPanel
                     config={defaultConfig}
                     setConfig={mockSetConfig}
                     onStartGame={mockOnStartGame}
@@ -252,91 +140,56 @@ describe('ConfigurationPanel', () => {
                     gameStarted={false}
                 />
             );
-
-            expect(screen.getByText(/Anzahl Versuche: 10/)).toBeInTheDocument();
+            // Finde die Karte über den Titel-Text
+            const greedyCard = screen.getByText('Greedy').closest('.algorithm-card');
+            expect(greedyCard).toHaveClass('selected');
         });
 
-        it('sollte setConfig beim Ändern des Sliders aufrufen', () => {
+        it('sollte einen Algorithmus zur Auswahl hinzufügen beim Klick auf eine nicht ausgewählte Karte', () => {
+            const configWithoutRandom = { ...defaultConfig, algorithms: ['greedy'] };
             render(
-                <ConfigurationPanel
-                    config={defaultConfig}
+                <ConfigPanel
+                    config={configWithoutRandom}
                     setConfig={mockSetConfig}
                     onStartGame={mockOnStartGame}
                     onStopGame={mockOnStopGame}
                     gameStarted={false}
                 />
             );
-
-            const slider = screen.getAllByRole('slider')[1];
-            fireEvent.change(slider, { target: { value: '25' } });
+            const randomCard = screen.getByText('Random').closest('.algorithm-card');
+            fireEvent.click(randomCard!);
 
             expect(mockSetConfig).toHaveBeenCalledWith({
-                ...defaultConfig,
-                numIterations: 25
+                ...configWithoutRandom,
+                algorithms: ['greedy', 'random']
             });
         });
 
-        it('sollte Werte außerhalb des Bereichs ignorieren', () => {
+        it('sollte einen Algorithmus aus der Auswahl entfernen beim Klick auf eine ausgewählte Karte', () => {
+            const configWithTwo = { ...defaultConfig, algorithms: ['greedy', 'random'] };
             render(
-                <ConfigurationPanel
-                    config={defaultConfig}
+                <ConfigPanel
+                    config={configWithTwo}
                     setConfig={mockSetConfig}
                     onStartGame={mockOnStartGame}
                     onStopGame={mockOnStopGame}
                     gameStarted={false}
                 />
             );
-
-            const numberInputs = screen.getAllByRole('spinbutton');
-            const iterationsInput = numberInputs[1];
-            fireEvent.change(iterationsInput, { target: { value: '51' } });
-
-            expect(mockSetConfig).not.toHaveBeenCalled();
-        });
-    });
-
-    describe('Algorithmus Auswahl', () => {
-        it('sollte den korrekten Algorithmus anzeigen', () => {
-            render(
-                <ConfigurationPanel
-                    config={defaultConfig}
-                    setConfig={mockSetConfig}
-                    onStartGame={mockOnStartGame}
-                    onStopGame={mockOnStopGame}
-                    gameStarted={false}
-                />
-            );
-
-            const select = screen.getByDisplayValue('Greedy');
-            expect(select).toBeInTheDocument();
-        });
-
-        it('sollte setConfig beim Ändern des Algorithmus aufrufen', () => {
-            render(
-                <ConfigurationPanel
-                    config={defaultConfig}
-                    setConfig={mockSetConfig}
-                    onStartGame={mockOnStartGame}
-                    onStopGame={mockOnStopGame}
-                    gameStarted={false}
-                />
-            );
-
-            const selects = screen.getAllByRole('combobox');
-            const algoSelect = selects[1];
-            fireEvent.change(algoSelect, { target: { value: 'epsilon-greedy' } });
+            const greedyCard = screen.getByText('Greedy').closest('.algorithm-card');
+            fireEvent.click(greedyCard!);
 
             expect(mockSetConfig).toHaveBeenCalledWith({
-                ...defaultConfig,
-                algorithm: 'epsilon-greedy'
+                ...configWithTwo,
+                algorithms: ['random'] // 'greedy' wurde entfernt
             });
         });
     });
 
-    describe('Spiel Steuerung', () => {
+    describe('Spiel Steuerung und Interaktionen', () => {
         it('sollte onStartGame aufrufen beim Klick auf Start-Button', () => {
             render(
-                <ConfigurationPanel
+                <ConfigPanel
                     config={defaultConfig}
                     setConfig={mockSetConfig}
                     onStartGame={mockOnStartGame}
@@ -344,31 +197,13 @@ describe('ConfigurationPanel', () => {
                     gameStarted={false}
                 />
             );
-
-            const startButton = screen.getByText('Spiel starten!');
-            fireEvent.click(startButton);
-
+            fireEvent.click(screen.getByText('Spiel starten!'));
             expect(mockOnStartGame).toHaveBeenCalledTimes(1);
-        });
-
-        it('sollte den Start-Button deaktivieren wenn Spiel läuft', () => {
-            render(
-                <ConfigurationPanel
-                    config={defaultConfig}
-                    setConfig={mockSetConfig}
-                    onStartGame={mockOnStartGame}
-                    onStopGame={mockOnStopGame}
-                    gameStarted={true}
-                />
-            );
-
-            const startButton = screen.getByText(/Spiel läuft/).closest('button');
-            expect(startButton).toBeDisabled();
         });
 
         it('sollte onStopGame aufrufen beim Klick auf Stop-Button', () => {
             render(
-                <ConfigurationPanel
+                <ConfigPanel
                     config={defaultConfig}
                     setConfig={mockSetConfig}
                     onStartGame={mockOnStartGame}
@@ -376,25 +211,30 @@ describe('ConfigurationPanel', () => {
                     gameStarted={true}
                 />
             );
-
-            const stopButton = screen.getByText(/Spiel abbrechen/);
-            fireEvent.click(stopButton);
-
+            fireEvent.click(screen.getByText('Spiel abbrechen'));
             expect(mockOnStopGame).toHaveBeenCalledTimes(1);
         });
 
-        it('sollte den Stop-Button nicht anzeigen wenn Spiel nicht läuft', () => {
+        it('sollte onStopGame aufrufen, wenn eine Konfiguration geändert wird, während das Spiel läuft', () => {
             render(
-                <ConfigurationPanel
+                <ConfigPanel
                     config={defaultConfig}
                     setConfig={mockSetConfig}
                     onStartGame={mockOnStartGame}
                     onStopGame={mockOnStopGame}
-                    gameStarted={false}
+                    gameStarted={true} // Spiel läuft
                 />
             );
+            const gaussianButton = screen.getByRole('button', { name: 'Gaussian' });
+            fireEvent.click(gaussianButton);
 
-            expect(screen.queryByText(/Spiel abbrechen/)).not.toBeInTheDocument();
+            // Zuerst wird das Spiel gestoppt...
+            expect(mockOnStopGame).toHaveBeenCalledTimes(1);
+            // ...dann wird die Konfiguration geändert.
+            expect(mockSetConfig).toHaveBeenCalledWith({
+                ...defaultConfig,
+                banditType: 'gaussian'
+            });
         });
     });
 });

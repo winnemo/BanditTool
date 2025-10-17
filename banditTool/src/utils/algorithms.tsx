@@ -1,58 +1,55 @@
+// in algorithms.tsx
+
+// Hinzugefügte Typ-Definitionen für mehr Sicherheit
+interface DrugStat {
+    attempts: number;
+    sumOfRewards: number;
+}
+
+interface DrugStats {
+    [key: string]: DrugStat;
+}
+
+type AlgorithmFunction = (drugStats: DrugStats, numActions?: number) => number;
+
 /**
  * Ein Objekt, das verschiedene Algorithmen zur Lösung des Multi-Armed Bandit-Problems enthält.
- * Jede Funktion entscheidet, welche Aktion als Nächstes ausgeführt werden soll.
  */
-export const algorithms = {
+export const algorithms: { [key: string]: AlgorithmFunction } = {
     /**
      * Wählt immer die Aktion mit der bisher höchsten Erfolgsrate.
-     * @param {object} drugStats - Objekt mit Statistiken { attempts, successes } für jede Aktion.
-     * @returns {number} Der Index der besten Aktion.
      */
     greedy: (drugStats) => {
         let bestDrug = 0;
-        let bestRate = -1;
+        let bestAverageReward = -1;
 
-        // Iteriere über alle Aktionen (Bohnen) im Statistik-Objekt.
         Object.keys(drugStats).forEach((drugKey, index) => {
             const stats = drugStats[drugKey];
-            // Berechne die Erfolgsrate. Falls noch keine Versuche gemacht wurden, ist die Rate 0.
-            const rate = stats.attempts > 0 ? stats.successes / stats.attempts : 0;
+            const averageReward = stats.attempts > 0 ? stats.sumOfRewards / stats.attempts : 0;
 
-            // Wenn die aktuelle Rate besser ist als die bisher beste, merke sie dir.
-            if (rate > bestRate) {
-                bestRate = rate;
+            if (averageReward > bestAverageReward) {
+                bestAverageReward = averageReward;
                 bestDrug = index;
             }
         });
-
         return bestDrug;
     },
 
     /**
-     * Wählt meistens die beste Aktion (greedy), aber mit einer Wahrscheinlichkeit
-     * von 10% (epsilon = 0.1) eine zufällige Aktion (exploration).
-     * @param {object} drugStats - Das Statistik-Objekt.
-     * @param {number} numActions - Die Gesamtzahl der verfügbaren Aktionen.
-     * @returns {number} Der Index der gewählten Aktion.
+     * Wählt meistens die beste Aktion, aber mit 10% Wahrscheinlichkeit eine zufällige.
      */
-    'epsilon-greedy': (drugStats, numActions) => {
-        // Phase der Erkundung (Exploration) mit 10% Wahrscheinlichkeit.
+    'epsilon-greedy': (drugStats, numActions = 1) => { // numActions mit Default-Wert versehen
         if (Math.random() < 0.1) {
-            // Wähle eine zufällige Aktion.
             return Math.floor(Math.random() * numActions);
         } else {
-            // Phase der Ausnutzung (Exploitation): Rufe den Greedy-Algorithmus auf.
             return algorithms.greedy(drugStats);
         }
     },
 
     /**
      * Wählt immer eine zufällige Aktion.
-     * @param {object} drugStats - Wird nicht verwendet.
-     * @param {number} numActions - Die Gesamtzahl der verfügbaren Aktionen.
-     * @returns {number} Der Index einer zufälligen Aktion.
      */
-    random: (drugStats, numActions) => {
+    random: (drugStats, numActions = 1) => { // numActions mit Default-Wert versehen
         return Math.floor(Math.random() * numActions);
     }
 };

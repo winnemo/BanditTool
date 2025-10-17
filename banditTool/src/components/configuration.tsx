@@ -1,205 +1,467 @@
-// Importiert notwendige Icons aus der 'lucide-react' Bibliothek und das zugehörige CSS-Styling.
-import { Settings, Coffee, RotateCcw, Play, AlertCircle } from 'lucide-react';
-import "./configuration.css";
+import {
+
+    Settings,
+
+    Play,
+
+    Square,
+
+    BarChart3,
+
+    TrendingUp,
+
+    Shuffle,
+
+} from "lucide-react";
+
+import './configuration.css';
+
+
+
+// ==================================================================
+
+// Typ-Definitionen
+
+// ==================================================================
+
+type AlgorithmType = "greedy" | "epsilon-greedy" | "random";
+
+
+
+interface Config {
+
+    numActions: number;
+
+    numIterations: number;
+
+    banditType: "bernoulli" | "gaussian";
+
+    algorithms: AlgorithmType[];
+
+}
+
+
 
 /**
- * Eine React-Komponente, die ein Konfigurationspanel für ein "Multi-Armed Bandit"-Spiel anzeigt.
- * Sie ermöglicht es dem Benutzer, verschiedene Parameter wie den Bandit-Typ, die Anzahl der Aktionen
- * und Iterationen sowie den Algorithmus einzustellen und das Spiel zu starten/stoppen.
- *
- * @param {object} props - Die Eigenschaften der Komponente.
- * @param {object} props.config - Das aktuelle Konfigurationsobjekt.
- * @param {function} props.setConfig - Funktion zum Aktualisieren des Konfigurationsobjekts.
- * @param {function} props.onStartGame - Callback-Funktion zum Starten des Spiels.
- * @param {function} props.onStopGame - Callback-Funktion zum Stoppen des Spiels.
- * @param {boolean} props.gameStarted - Flag, das angibt, ob das Spiel gerade läuft.
- * @returns {JSX.Element} Das gerenderte Konfigurationspanel.
+
+ * Props für die ConfigPanel-Komponente.
+
+ * Definiert die Daten und Callbacks, die von der übergeordneten Komponente (App.tsx) bereitgestellt werden.
+
  */
-const ConfigurationPanel = ({ config, setConfig, onStartGame, onStopGame, gameStarted }) => {
 
-    // Handler-Funktion für Änderungen am Slider/Input für die Anzahl der Aktionen ("Bohnen").
-    // Stellt sicher, dass der Wert eine gültige Zahl im Bereich von 1 bis 10 ist.
-    const handleNumActionsChange = (value) => {
-        if (!isNaN(value) && value >= 1 && value <= 10) {
-            setConfig({ ...config, numActions: value });
-        }
+interface ConfigPanelProps {
+
+    config: Config;
+
+    setConfig: (config: Config) => void;
+
+    onStartGame: () => void;
+
+    onStopGame: () => void;
+
+    gameStarted: boolean;
+
+}
+
+
+
+// ==================================================================
+
+// Implementierung
+
+// ==================================================================
+
+
+
+/**
+
+ * Eine "Controlled Component" zur Darstellung und Bearbeitung der Spiel-Konfiguration.
+
+ * Sie empfängt den aktuellen Zustand über Props und meldet Änderungen über Callbacks an die Elternkomponente zurück.
+
+ */
+
+export function ConfigPanel({
+
+                                config,
+
+                                setConfig,
+
+                                onStartGame,
+
+                                onStopGame,
+
+                                gameStarted,
+
+                            }: ConfigPanelProps) {
+
+
+
+    /**
+
+     * Allgemeiner Handler für Konfigurationsänderungen (Slider, Toggles).
+
+     * Stoppt das laufende Spiel, bevor eine Änderung vorgenommen wird.
+
+     * @param {keyof Config} field - Das zu ändernde Feld im Config-Objekt.
+
+     * @param {any} value - Der neue Wert.
+
+     */
+
+    const handleConfigChange = (field: keyof Config, value: any) => {
+
+        if(gameStarted) onStopGame();
+
+        const parsedValue = typeof config[field] === 'number' ? parseInt(value, 10) : value;
+
+        if (field === 'numActions' && (parsedValue < 1 || parsedValue > 10)) return;
+
+        if (field === 'numIterations' && (parsedValue < 1 || parsedValue > 50)) return;
+
+
+
+        setConfig({ ...config, [field]: parsedValue });
+
     };
 
-    // Handler-Funktion für Änderungen am Slider/Input für die Anzahl der Iterationen ("Versuche").
-    // Stellt sicher, dass der Wert eine gültige Zahl im Bereich von 1 bis 50 ist.
-    const handleNumIterationsChange = (value) => {
-        if (!isNaN(value) && value >= 1 && value <= 50) {
-            setConfig({ ...config, numIterations: value });
+
+
+    /**
+
+     * Handler zum Hinzufügen oder Entfernen eines Algorithmus aus der Konfiguration.
+
+     * Stoppt ebenfalls das laufende Spiel, bevor eine Änderung vorgenommen wird.
+
+     * @param {AlgorithmType} algorithm - Der umzuschaltende Algorithmus.
+
+     */
+
+    const handleAlgorithmToggle = (algorithm: AlgorithmType) => {
+
+        const currentAlgorithms = config.algorithms;
+
+        if (currentAlgorithms.includes(algorithm)) {
+
+            setConfig({
+
+                ...config,
+
+                algorithms: currentAlgorithms.filter((a) => a !== algorithm),
+
+            })
+
+        } else {
+
+            setConfig({ ...config, algorithms: [...currentAlgorithms, algorithm] });
+
         }
+
     };
+
+
+
+// Statisches Mapping-Objekt für UI-Informationen der Algorithmen.
+
+    const algorithmInfo: Record<AlgorithmType, { description: string; icon: React.ReactNode }> = {
+
+        greedy: {
+
+            description: "Wählt immer die aktuell beste bekannte Kaffeebohne aus.",
+
+            icon: <BarChart3 className="algorithm-card-icon" />,
+
+        },
+
+        'epsilon-greedy': {
+
+            description: "Wählt meistens die beste Bohne, aber manchmal auch zufällig, um neue Optionen zu erkunden.",
+
+            icon: <TrendingUp className="algorithm-card-icon" />,
+
+        },
+
+        random: {
+
+            description: "Reiner Zufall: Dient als gute Vergleichsbasis.",
+
+            icon: <Shuffle className="algorithm-card-icon" />,
+
+        },
+
+    };
+
+
 
     return (
+
         <div className="card">
-            {/* Kopfzeile des Panels */}
+
             <div className="card-header">
-                <h2 className="card-title">
-                    <Settings className="config-icon" />
-                    Spiel-Konfiguration
+
+                <h2 className="card-title-main">
+
+                    <Settings className="config-icon-main" /> Spiel-Konfiguration
+
                 </h2>
+
             </div>
+
             <div className="card-content">
+
                 <div className="config-section">
 
-                    {/* Konfigurationspunkt: Bandit-Typ */}
-                    <div className="config-item">
-                        <label className="config-label">
-                            Bandit-Typ
-                        </label>
-                        <div className="select-container">
-                            <select
-                                className="select-trigger"
-                                value={config.banditType}
-                                onChange={(e) => setConfig({...config, banditType: e.target.value})}
-                            >
-                                <option value="bernoulli">Bernoulli</option>
-                                <option value="gaussian">Gaussian</option>
-                            </select>
-                        </div>
-                        {/* Dynamischer Hilfetext, der den ausgewählten Bandit-Typ erklärt */}
-                        <p className="help-text">
-                            {config.banditType === 'bernoulli'
-                                ? 'Binäre Belohnungen: Jede Kaffeebohne gibt entweder 0 oder 1 Punkt.'
-                                : 'Kontinuierliche Belohnungen: Jede Kaffeebohne gibt Punkte aus einer Normalverteilung von 0 bis 10 Punkten.'
-                            }
-                        </p>
-                    </div>
+                    <div className="config-params-grid">
 
-                    {/* Konfigurationspunkt: Anzahl der Aktionen (Bohnen) */}
-                    <div className="config-item">
-                        <label className="config-label">
-                            <Coffee className="config-icon"/>
-                            Anzahl verschiedener Bohnen: {config.numActions}
-                        </label>
-                        <div className="slider-container">
-                            <div className="slider-wrapper">
-                                <input
-                                    type="range"
-                                    className="slider"
-                                    value={config.numActions}
-                                    onChange={(e) => handleNumActionsChange(parseInt(e.target.value, 10))}
-                                    min={1}
-                                    max={10}
-                                    step={1}
-                                />
-                                <div className="slider-labels">
-                                    <span>1</span>
-                                    <span>10</span>
-                                </div>
+                        <div className="config-param-box">
+
+                            <label className="config-label-compact">Bandit-Typ</label>
+
+                            <div className="toggle-group">
+
+                                <button
+
+                                    type="button"
+
+                                    className={`toggle-button ${config.banditType === "bernoulli" ? "active" : ""}`}
+
+                                    onClick={() => handleConfigChange('banditType', 'bernoulli')}
+
+                                >
+
+                                    Bernoulli
+
+                                </button>
+
+                                <button
+
+                                    type="button"
+
+                                    className={`toggle-button ${config.banditType === "gaussian" ? "active" : ""}`}
+
+                                    onClick={() => handleConfigChange('banditType', 'gaussian')}
+
+                                >
+
+                                    Gaussian
+
+                                </button>
+
                             </div>
-                            {/* Zusätzliches Nummern-Input für präzise Eingaben */}
-                            <input
-                                type="number"
-                                className="number-input"
-                                value={config.numActions}
-                                onChange={(e) => handleNumActionsChange(parseInt(e.target.value, 10))}
-                                min={1}
-                                max={10}
-                            />
-                        </div>
-                    </div>
 
-                    {/* Konfigurationspunkt: Anzahl der Iterationen (Versuche) */}
-                    <div className="config-item">
-                        <label className="config-label">
-                            <RotateCcw className="config-icon" />
-                            Anzahl Versuche: {config.numIterations}
-                        </label>
-                        <div className="slider-container">
-                            <div className="slider-wrapper">
-                                <input
-                                    type="range"
-                                    className="slider"
-                                    value={config.numIterations}
-                                    onChange={(e) => handleNumIterationsChange(parseInt(e.target.value, 10))}
-                                    min={1}
-                                    max={50}
-                                    step={1}
-                                />
-                                <div className="slider-labels">
-                                    <span>1</span>
-                                    <span>50</span>
+                            <p className="help-text-compact">
+
+                                {config.banditType === "bernoulli"
+
+                                    ? "💡 Binäre Belohnungen: 0 oder 1 Punkt."
+
+                                    : "💡 Kontinuierliche Belohnungen aus Normalverteilung."}
+
+                            </p>
+
+                        </div>
+
+
+
+                        <div className="config-param-box config-param-box-wide">
+
+                            <div className="slider-row">
+
+                                <label className="config-label-compact">Bohnen:</label>
+
+                                <div className="slider-with-input">
+
+                                    <input
+
+                                        type="range"
+
+                                        className="slider"
+
+                                        value={config.numActions}
+
+                                        onChange={(e) => handleConfigChange('numActions', e.target.value)}
+
+                                        max={10} min={1} step={1}
+
+                                    />
+
+                                    <input
+
+                                        type="number"
+
+                                        className="number-input-compact"
+
+                                        value={config.numActions}
+
+                                        onChange={(e) => handleConfigChange('numActions', e.target.value)}
+
+                                        min={1} max={10}
+
+                                    />
+
                                 </div>
+
                             </div>
-                            <input
-                                type="number"
-                                className="number-input"
-                                value={config.numIterations}
-                                onChange={(e) => handleNumIterationsChange(parseInt(e.target.value, 10))}
-                                min={1}
-                                max={50}
-                                step={1}
-                            />
+
+
+
+                            <div className="slider-row">
+
+                                <label className="config-label-compact">Versuche:</label>
+
+                                <div className="slider-with-input">
+
+                                    <input
+
+                                        type="range"
+
+                                        className="slider"
+
+                                        value={config.numIterations}
+
+                                        onChange={(e) => handleConfigChange('numIterations', e.target.value)}
+
+                                        max={50} min={1} step={1}
+
+                                    />
+
+                                    <input
+
+                                        type="number"
+
+                                        className="number-input-compact"
+
+                                        value={config.numIterations}
+
+                                        onChange={(e) => handleConfigChange('numIterations', e.target.value)}
+
+                                        min={1} max={50}
+
+                                    />
+
+                                </div>
+
+                            </div>
+
                         </div>
+
                     </div>
 
-                    {/* Ein kleiner Hinweis-Text für den Benutzer */}
-                    <div className="config-separator">
-                        <p className="tip-text">
-                            <span className="tip-emoji">💡</span>
-                            Stelle die Parameter für dein Multi-Armed Bandit Experiment ein. Mehr Bohnen bedeuten mehr Optionen, aber auch schwierigere Entscheidungen!
+
+
+                    <div className="config-section-group">
+
+                        <h3 className="config-section-title">
+
+                            <BarChart3 className="config-icon" /> Wähle deine Gegner
+
+                        </h3>
+
+                        <div className="algorithm-cards">
+
+                            {(["greedy", "epsilon-greedy", "random"] as AlgorithmType[]).map((algo) => (
+
+                                <div
+
+                                    key={algo}
+
+                                    className={`algorithm-card ${config.algorithms.includes(algo) ? "selected" : ""}`}
+
+                                    onClick={() => handleAlgorithmToggle(algo)}
+
+                                >
+
+                                    <div className="algorithm-card-header">
+
+                                        {algorithmInfo[algo].icon}
+
+                                        {config.algorithms.includes(algo) && (
+
+                                            <div className="algorithm-badge">Ausgewählt</div>
+
+                                        )}
+
+                                    </div>
+
+                                    <h3 className="algorithm-card-title">{algo.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase())}</h3>
+
+                                    <p className="algorithm-card-description">{algorithmInfo[algo].description}</p>
+
+                                </div>
+
+                            ))}
+
+                        </div>
+
+                        <p className="help-text help-text-centered">
+
+                            {config.algorithms.length === 0
+
+                                ? "Du trittst gegen niemanden an. Perfekt zum Üben!"
+
+                                : config.algorithms.length === 1
+
+                                    ? `Du trittst gegen ${config.algorithms[0].replace('-', ' ')} an.`
+
+                                    : `Du trittst gegen ${config.algorithms.length} Algorithmen an!`}
+
                         </p>
+
                     </div>
 
-                    {/* Konfigurationspunkt: Algorithmus-Auswahl */}
-                    <div className="config-item">
-                        <label className="config-label">
-                            <AlertCircle className="config-icon" />
-                            Algorithmus
-                        </label>
-                        <div className="select-container">
-                            <select
-                                id="algorithm"
-                                value={config.algorithm}
-                                onChange={(e) => setConfig({ ...config, algorithm: e.target.value })}
-                                className="select-trigger"
-                            >
-                                <option value="greedy">Greedy</option>
-                                <option value="epsilon-greedy">ε-Greedy</option>
-                                <option value="random">Random</option>
-                            </select>
-                        </div>
-                    </div>
 
-                    {/* Container für die Start/Stop-Aktionsbuttons */}
+
                     <div className="button-container">
+
                         <button
-                            className={`button button-start ${gameStarted ? 'disabled' : ''}`}
+
+                            className={`button button-start ${gameStarted ? "disabled" : ""}`}
+
                             onClick={onStartGame}
-                            disabled={gameStarted} // Button wird deaktiviert, wenn das Spiel läuft
+
+                            disabled={gameStarted}
+
                         >
-                            {/* Bedingte Anzeige: Text ändert sich, je nachdem ob das Spiel läuft */}
+
                             {gameStarted ? (
+
                                 <>
-                                    <div className="spin-animation">⚡</div>
-                                    Spiel läuft...
+
+                                    <div className="spin-animation">⚡</div> Spiel läuft...
+
                                 </>
+
                             ) : (
+
                                 <>
-                                    <Play className="button-icon" />
-                                    Spiel starten!
+
+                                    <Play className="button-icon" /> Spiel starten!
+
                                 </>
+
                             )}
+
                         </button>
 
-                        {/* Der "Spiel abbrechen"-Button wird nur gerendert, wenn das Spiel gestartet ist */}
                         {gameStarted && (
-                            <button
-                                className="button button-stop"
-                                onClick={onStopGame}
-                            >
-                                🛑 Spiel abbrechen
-                            </button>
-                        )}
-                    </div>
-                </div>
-            </div>
-        </div>
-    );
-};
 
-export default ConfigurationPanel;
+                            <button className="button button-stop" onClick={onStopGame}>
+
+                                <Square className="button-icon" /> Spiel abbrechen
+
+                            </button>
+
+                        )}
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    );
+
+}

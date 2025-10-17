@@ -1,136 +1,273 @@
-import "./game.css";
-// Importiert die Icons für Erfolg (Häkchen) und Misserfolg (Kreuz).
-import { Check, X } from 'lucide-react';
+import { Coffee, TrendingUp, Trophy, Check, X } from 'lucide-react';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { PLAYER_COLOR, ALGORITHM_COLORS } from '../utils/styleConstants';
+import './game.css';
 
-/**
- * Eine React-Komponente, die die Haupt-Spieloberfläche darstellt.
- * Sie zeigt den Spielstatus, die Auswahlmöglichkeiten für den Spieler und die Aktionen des Algorithmus an.
- *
- * @param {object} props - Die Eigenschaften der Komponente.
- * @param {object} props.gameState - Der aktuelle Zustand des Spiels (Runde, Punkte etc.).
- * @param {object} props.config - Die vom Benutzer gewählte Spielkonfiguration.
- * @param {function} props.onDrugChoice - Callback, der bei der Wahl einer Aktion durch den Spieler ausgelöst wird.
- * @param {boolean} props.isGameComplete - Flag, das anzeigt, ob das Spiel beendet ist.
- * @param {JSX.Element|null} props.notification - Eine Benachrichtigung, die dem Spieler angezeigt wird.
- * @param {object} props.algorithmState - Der Zustand der letzten Aktion des Algorithmus.
- * @returns {JSX.Element|null} Die gerenderte Spieloberfläche oder null.
- */
-const GameInterface = ({
-                           gameState,
-                           config,
-                           onDrugChoice,
-                           isGameComplete,
-                           notification,
-                           algorithmState
-                       }) => {
+// Die Typen aus dem useGameLogic Hook importieren/neu definieren
+// Es ist besser, diese aus einer zentralen 'types.ts' Datei zu importieren
+type AlgorithmType = 'greedy' | 'epsilon-greedy' | 'random';
+interface GameState {
+    currentPatient: number;
+    savedLives: number;
+}
+interface Config {
+    numActions: number;
+    numIterations: number;
+    banditType: "bernoulli" | "gaussian";
+    algorithms: AlgorithmType[];
+}
+interface PerformanceDataPoint {
+    patient: number;
+    playerSavedLives: number;
+    [key: string]: number;
+}
 
-    // Formatiert den Algorithmus-Namen für eine schönere Anzeige (z.B. "epsilon-greedy" -> "Epsilon greedy").
-    const algoName = config.algorithm.charAt(0).toUpperCase() + config.algorithm.slice(1).replace('-', ' ');
+interface AlgorithmState {
+    name: AlgorithmType;
+    choice: number;
+    reward: number | boolean | null;
+}
 
-    // Wenn das Spiel weder läuft noch beendet ist, wird nichts angezeigt.
-    if (!gameState.isPlaying && !isGameComplete) return null;
+interface GameAreaProps {
+    gameState: GameState;
+    config: Config;
+    onBeanClick: (index: number) => void;
+    isGameComplete: boolean;
+    algorithmPerformance: PerformanceDataPoint[];
+    algorithmStates: AlgorithmState[];
+    lastPlayerReward: number | null;
+}
+enum CoffeeBeans {
+    "Arabica",
+    "Robusta",
+    "Liberica",
+    "Excelsa",
+    "Typica",
+    "Bourbon",
+    "Geisha",
+    "Maragogype",
+    "Kopi Luwak",
+    "Jamaica Blue Mountain"
+}
 
-    // Zustand 1: Das Spiel ist beendet. Zeige den Abschlussbildschirm an.
-    if (isGameComplete) {
+
+// Benutzerdefinierter Tooltip für den Graphen
+const CustomTooltip = ({ active, payload, label }: any) => {
+    if (active && payload && payload.length) {
         return (
-            <div className="card">
-                <div className="card-content text-center p-8">
-                    <h3 className="text-2xl font-bold text-green-700 mb-4">Spiel beendet! ☕</h3>
-                    <p className="text-lg text-gray-700 mb-2">
-                        Sie haben <span className="font-bold text-green-600">{gameState.savedLives}</span> von {config.numIterations} Tassen erfolgreich gebrüht.
-                    </p>
-                    <p className="text-lg text-gray-700">
-                        Ihre Erfolgsrate: <span className="font-bold text-green-600">
-                            {((gameState.savedLives / config.numIterations) * 100).toFixed(1)}%
-                        </span>
-                    </p>
-                </div>
+            <div className="custom-tooltip">
+                <p className="tooltip-label">{`Runde: ${label}`}</p>
+                <ul className="tooltip-list">
+                    {payload.map((entry: any, index: number) => (
+                        <li key={`item-${index}`} style={{ color: entry.color }}>
+                            {`${entry.name} : ${Math.round(entry.value * 10) / 10}`}
+                        </li>
+                    ))}
+                </ul>
             </div>
         );
     }
+    return null;
+};
 
-    // Hilfsvariable, um zu prüfen, ob der Algorithmus in dieser Runde bereits eine Wahl getroffen hat.
-    const hasAlgoResult = algorithmState.choice !== -1;
+// Hilfsfunktion zur Formatierung der Namen
+const formatAlgoName = (name: string) => {
+    return name
+        .split('-')
+        .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+        .join(' ');
+};
 
-    // Zustand 2: Das Spiel läuft. Zeige die aktive Spieloberfläche an.
+export function GameArea({
+                             gameState,
+                             config,
+                             onBeanClick,
+                             isGameComplete,
+                             algorithmPerformance,
+                             algorithmStates,
+                             lastPlayerReward,
+                         }: GameAreaProps) {
+
+    // Prüfen, ob die Algorithmen bereits eine Wahl getroffen haben in dieser Runde
+    const hasAlgoResults = gameState.currentPatient > 0 && algorithmStates.length > 0 && algorithmStates[0].choice !== -1;
+
     return (
-        <div className="card">
-            <div className="card-header">
-                <h2 className="game-header">
-                    <span className="game-info">
-                        <span className="game-info-small">
-                            Runde {gameState.currentPatient} von {config.numIterations}
-                        </span>
-                    </span>
-                    <span className="game-info">
-                        <span className="game-info-small">
-                            Gebrühte Tassen: {gameState.savedLives} von {gameState.currentPatient}
-                        </span>
-                    </span>
-                </h2>
+        <div className="game-area-container">
+            {/* Status Bar */}
+            <div className="game-status-bar">
+                <div className="status-badge status-badge-primary">
+                    Runde {gameState.currentPatient} / {config.numIterations}
+                </div>
+                <div className="status-badge status-badge-secondary">
+                    {config.banditType.charAt(0).toUpperCase() + config.banditType.slice(1)}
+                </div>
+                <div className="status-badge status-badge-success">
+                    {config.algorithms.length} {config.algorithms.length === 1 ? 'Algorithmus' : 'Algorithmen'}
+                </div>
             </div>
-            <div className="card-content">
 
-                {/* Zeigt die Benachrichtigung an, falls eine vorhanden ist. */}
-                {notification && (
-                    <div className="notification-box mb-4">
-                        {notification}
+            {/* Left Column - Bean Selection */}
+            <div className="game-column game-column-main">
+                <div className="card card-game">
+                    <div className="card-header">
+                        <h2 className="card-title-game">
+                            <Coffee className="config-icon" />
+                            Wähle eine Kaffeebohne
+                        </h2>
                     </div>
-                )}
+                    {isGameComplete && (
+                        <div className="game-complete-message">
+                            <Trophy className="complete-icon"/>
+                            <p>Spiel beendet! Sehr gut gemacht!</p>
+                            <p className="score-text">
+                                {config.banditType === 'bernoulli'
+                                    ? 'Dein finaler Punktestand'
+                                    : 'Deine finale Ø Bewertung'
+                                }: {
+                                config.banditType === 'bernoulli'
+                                    ? gameState.savedLives.toFixed(0)
+                                    : (gameState.savedLives / config.numIterations).toFixed(1)
+                            }
+                            </p>
+                        </div>
+                    )}
 
-                <div className="game-grid">
-
-                    {/* Bereich für die Aktionen des Spielers */}
-                    <div className="player-actions">
-                        <p className="game-info-small mb-3">Wählen Sie eine Kaffeebohne:</p>
-                        <div className="beans-grid">
-                            {/* Erzeugt für jede mögliche Aktion einen Button */}
-                            {Array.from({length: config.numActions}).map((_, index) => (
+                    <div className="card-content">
+                        <div className="beans-grid-compact">
+                            {Array.from({ length: config.numActions }, (_, index) => (
                                 <button
-                                    key={index}
-                                    onClick={() => onDrugChoice(index)}
-                                    // Wendet eine spezielle Klasse an, wenn der Algorithmus dieselbe Bohne gewählt hat.
-                                    className={`bean-button ${hasAlgoResult && algorithmState.choice === index ? 'algo-selected' : ''}`}
+                                    key={index + 1}
+                                    onClick={() => onBeanClick(index)}
+                                    className="bean-button"
                                     disabled={isGameComplete}
                                 >
-                                    ☕ Bohne {index + 1}
+                                    <Coffee className="bean-icon" />
+                                    <span className="bean-text">{CoffeeBeans[index]}</span>
                                 </button>
                             ))}
                         </div>
-                    </div>
 
-                    {/* Bereich für die Aktionen des Algorithmus. Wird nur angezeigt, wenn ein Ergebnis vorliegt. */}
-                    {hasAlgoResult && (
-                        <div className="algorithm-area">
-                            <h4 className="algo-title">
-                                {algoName} Algorithmus
-                            </h4>
-                            <div className="algo-result-box">
-                                <p className="algo-choice-text">
-                                    Wahl: Bohne {algorithmState.choice + 1}
-                                </p>
-                                <div className={`algo-outcome ${algorithmState.success ? 'success' : 'failure'}`}>
-                                    {/* Zeigt je nach Erfolg ein Häkchen oder ein Kreuz an. */}
-                                    {algorithmState.success ? (
-                                        <>
-                                            <Check className="outcome-icon" />
-                                            Erfolgreich
-                                        </>
-                                    ) : (
-                                        <>
-                                            <X className="outcome-icon" />
-                                            Misserfolg
-                                        </>
-                                    )}
+
+                    </div>
+                </div>
+            </div>
+
+            {/* Right Column - Stats & Chart */}
+            <div className="game-column game-column-side">
+                {/* Cups Counter, zeigt den Punktestand */}
+                <div className="card cups-card">
+                    <div className="card-content">
+                        <div className="cups-stats">
+                            <Coffee className="cups-icon"/>
+                            <div className="cups-info">
+                                <div className="cups-number">
+                                    {lastPlayerReward !== null
+                                        ? lastPlayerReward.toFixed(config.banditType === 'bernoulli' ? 0 : 1)
+                                        : '-'}
                                 </div>
+                                <div className="cups-label">Punkte in dieser Runde</div>
                             </div>
                         </div>
-                    )}
+                    </div>
                 </div>
 
+                {/* Algorithm Actions */}
+                <div className="card">
+                    <div className="card-header">
+                        <h3 className="card-title-small">Algorithmen-Aktionen</h3>
+                    </div>
+                    <div className="card-content">
+                        {hasAlgoResults ? (
+                            <div className="algorithm-details-grid">
+                                {algorithmStates
+                                    .filter(state => config.algorithms.includes(state.name))
+                                    .map((state) => {
+                                        const colorIndex = config.algorithms.indexOf(state.name);
+                                        const color = ALGORITHM_COLORS[colorIndex % ALGORITHM_COLORS.length];
+
+                                        return (
+                                            <div key={state.name} className="algo-result-box"
+                                                 style={{borderColor: color, color: color}}>
+                                                <div className="algo-header">
+                                                    <strong
+                                                        className="algo-name-tag">{formatAlgoName(state.name)}</strong>
+                                                    <span>wählt {CoffeeBeans[state.choice]} </span>
+                                                </div>
+                                                <div className="algo-outcome">
+                                                    {config.banditType === 'bernoulli' ? (
+                                                        //Bernoulli
+                                                        state.reward ? (
+                                                            <><Check className="outcome-icon success"/> Erfolgreich</>
+                                                        ) : (
+                                                            <><X className="outcome-icon failure"/> Misserfolg</>
+                                                        )
+                                                    ) : (
+                                                        // Gauss
+                                                        <strong>Bewertung: {typeof state.reward === 'number' ? state.reward.toFixed(1) : 'N/A'}</strong>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                            </div>
+                        ) : (
+                            <p className="algo-wait-text">Die Algorithmen warten auf deine erste Wahl...</p>
+                        )}
+                    </div>
+                </div>
+
+                {/* Performance Chart (Logik aus PerformanceChart.tsx übernommen) */}
+                <div className="card card-chart">
+                    <div className="card-header">
+                        <h3 className="card-title-small">
+                            <TrendingUp className="config-icon-small"/> Performance
+                        </h3>
+                    </div>
+                    <div className="card-content">
+                        <ResponsiveContainer width="100%" height={300}>
+                            <LineChart data={algorithmPerformance} margin={{top: 5, right: 20, left: 20, bottom: 25}}>
+                                <CartesianGrid strokeDasharray="3 3"/>
+                                <XAxis
+                                    dataKey="patient"
+                                    label={{value: 'Runde (Tasse)', position: 'insideBottom', offset: -15}}
+                                    domain={[0, config.numIterations]}
+                                />
+                                <YAxis
+                                    label={{
+                                        value: 'Kumulierte Punkte',
+                                        angle: -90,
+                                        position: 'insideLeft',
+                                        offset: -15
+                                    }}
+                                    domain={[0, config.numIterations]}
+                                    allowDecimals={false}
+                                />
+                                <Tooltip content={<CustomTooltip/>}/>
+                                <Legend wrapperStyle={{paddingTop: '25px'}}/>
+                                <Line
+                                    type="monotone"
+                                    dataKey="playerSavedLives"
+                                    stroke={PLAYER_COLOR}
+                                    strokeWidth={2}
+                                    name="Deine Performance"
+                                    dot={{r: 4}}
+                                />
+                                {config.algorithms.map((algoName, index) => (
+                                    <Line
+                                        key={algoName}
+                                        type="monotone"
+                                        dataKey={algoName}
+                                        stroke={ALGORITHM_COLORS[index % ALGORITHM_COLORS.length]}
+                                        strokeWidth={2}
+                                        name={`${algoName.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase())}`}
+                                        dot={{r: 4}}
+                                    />
+                                ))}
+                            </LineChart>
+                        </ResponsiveContainer>
+                    </div>
+                </div>
             </div>
         </div>
     );
-};
-
-export default GameInterface;
+}
