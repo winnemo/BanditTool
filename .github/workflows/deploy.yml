@@ -26,10 +26,9 @@ jobs:
         uses: actions/checkout@v4 # 1. Lädt deinen Code herunter
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4 # 2. Richtet Node.js ein
+        uses: actions/setup-node@v4
         with:
-          node-version: "20"
-          cache: 'npm'
+          node-version: 20
 
       - name: Install dependencies
         run: npm install # 3. Installiert alle Pakete
