@@ -1,5 +1,5 @@
 import banditLogo from '../assets/banditLogo.png'; // Passe den Pfad ggf. an
-import './Header.css';
+import './header.css';
 
 export function Header() {
     return (
