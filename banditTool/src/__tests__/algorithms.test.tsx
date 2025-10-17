@@ -2,22 +2,25 @@ import { algorithms } from '../utils/algorithms';
 
 describe('algorithms', () => {
     describe('greedy', () => {
-        it('sollte die Aktion mit der höchsten Erfolgsrate wählen', () => {
+        // Beschreibung an die neue Logik angepasst
+        it('sollte die Aktion mit der höchsten durchschnittlichen Belohnung wählen', () => {
             const drugStats = {
-                drug0: { attempts: 10, successes: 3 },
-                drug1: { attempts: 10, successes: 7 },
-                drug2: { attempts: 10, successes: 5 }
+                // 'successes' zu 'sumOfRewards' geändert
+                drug0: { attempts: 10, sumOfRewards: 3 },  // Avg: 0.3
+                drug1: { attempts: 10, sumOfRewards: 7 },  // Avg: 0.7
+                drug2: { attempts: 10, sumOfRewards: 5 }   // Avg: 0.5
             };
 
             const result = algorithms.greedy(drugStats);
             expect(result).toBe(1);
         });
 
-        it('sollte die erste Aktion wählen bei gleichen Raten', () => {
+        it('sollte die erste Aktion wählen bei gleichen Belohnungsraten', () => {
             const drugStats = {
-                drug0: { attempts: 10, successes: 5 },
-                drug1: { attempts: 10, successes: 5 },
-                drug2: { attempts: 10, successes: 5 }
+                // 'successes' zu 'sumOfRewards' geändert
+                drug0: { attempts: 10, sumOfRewards: 5 },
+                drug1: { attempts: 10, sumOfRewards: 5 },
+                drug2: { attempts: 10, sumOfRewards: 5 }
             };
 
             const result = algorithms.greedy(drugStats);
@@ -26,20 +29,22 @@ describe('algorithms', () => {
 
         it('sollte mit unbenutzten Aktionen umgehen können', () => {
             const drugStats = {
-                drug0: { attempts: 0, successes: 0 },
-                drug1: { attempts: 5, successes: 3 },
-                drug2: { attempts: 0, successes: 0 }
+                // 'successes' zu 'sumOfRewards' geändert
+                drug0: { attempts: 0, sumOfRewards: 0 },
+                drug1: { attempts: 5, sumOfRewards: 3 }, // Avg: 0.6
+                drug2: { attempts: 0, sumOfRewards: 0 }
             };
 
             const result = algorithms.greedy(drugStats);
             expect(result).toBe(1);
         });
 
-        it('sollte die erste Aktion wählen wenn alle unbenutzt sind', () => {
+        it('sollte die erste Aktion wählen, wenn alle unbenutzt sind', () => {
             const drugStats = {
-                drug0: { attempts: 0, successes: 0 },
-                drug1: { attempts: 0, successes: 0 },
-                drug2: { attempts: 0, successes: 0 }
+                // 'successes' zu 'sumOfRewards' geändert
+                drug0: { attempts: 0, sumOfRewards: 0 },
+                drug1: { attempts: 0, sumOfRewards: 0 },
+                drug2: { attempts: 0, sumOfRewards: 0 }
             };
 
             const result = algorithms.greedy(drugStats);
@@ -50,9 +55,10 @@ describe('algorithms', () => {
     describe('epsilon-greedy', () => {
         it('sollte einen gültigen Index zurückgeben', () => {
             const drugStats = {
-                drug0: { attempts: 10, successes: 3 },
-                drug1: { attempts: 10, successes: 7 },
-                drug2: { attempts: 10, successes: 5 }
+                // 'successes' zu 'sumOfRewards' geändert
+                drug0: { attempts: 10, sumOfRewards: 3 },
+                drug1: { attempts: 10, sumOfRewards: 7 },
+                drug2: { attempts: 10, sumOfRewards: 5 }
             };
             const numActions = 3;
 
@@ -63,9 +69,10 @@ describe('algorithms', () => {
 
         it('sollte manchmal explorieren (über mehrere Aufrufe)', () => {
             const drugStats = {
-                drug0: { attempts: 10, successes: 1 },
-                drug1: { attempts: 10, successes: 9 },
-                drug2: { attempts: 10, successes: 1 }
+                // 'successes' zu 'sumOfRewards' geändert
+                drug0: { attempts: 10, sumOfRewards: 1 },
+                drug1: { attempts: 10, sumOfRewards: 9 }, // klar die beste Wahl
+                drug2: { attempts: 10, sumOfRewards: 1 }
             };
             const numActions = 3;
 
@@ -74,7 +81,7 @@ describe('algorithms', () => {
                 results.add(algorithms['epsilon-greedy'](drugStats, numActions));
             }
 
-            // Mit epsilon=0.1 sollten über 100 Versuche mehrere Aktionen gewählt werden
+            // Mit epsilon=0.1 sollten über 100 Versuche sehr wahrscheinlich mehrere Aktionen gewählt werden
             expect(results.size).toBeGreaterThan(1);
         });
     });

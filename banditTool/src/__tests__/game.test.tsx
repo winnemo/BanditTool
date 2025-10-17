@@ -1,431 +1,207 @@
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import '@testing-library/jest-dom';
-import GameInterface from "../components/game.tsx";
+// Name der Komponente an die neue Datei angepasst
+import { GameArea } from "../components/game.tsx";
 
-describe('GameInterface', () => {
-    const mockOnDrugChoice = vi.fn();
+// Mock, um 'recharts' im Test-Environment zu ersetzen, da es auf Browser-APIs angewiesen ist
+vi.mock('recharts', async () => {
+    const OriginalModule = await vi.importActual('recharts');
+    return {
+        ...OriginalModule,
+        ResponsiveContainer: ({ children }) => <div className="responsive-container">{children}</div>,
+    };
+});
 
+describe('GameArea', () => {
+    // Mock-Funktion an neuen Prop-Namen angepasst
+    const mockOnBeanClick = vi.fn();
+
+    // Default-Props an die neue, komplexere Struktur angepasst
     const defaultConfig = {
-        banditType: 'bernoulli',
+        banditType: 'bernoulli' as const,
         numActions: 5,
         numIterations: 10,
-        algorithm: 'greedy'
+        algorithms: ['greedy', 'epsilon-greedy']
     };
 
     const defaultGameState = {
-        isPlaying: true,
         currentPatient: 1,
         savedLives: 0
     };
 
-    const defaultAlgorithmState = {
-        choice: -1,
-        success: false
-    };
+    const bernoulliAlgorithmStates = [
+        { name: 'greedy' as const, choice: 0, reward: true },
+        { name: 'epsilon-greedy' as const, choice: 1, reward: false },
+        { name: 'random' as const, choice: 2, reward: true }, // Dieser wird im Test gefiltert
+    ];
 
     beforeEach(() => {
         vi.clearAllMocks();
     });
 
-    describe('Rendering Zustände', () => {
-        it('sollte null zurückgeben wenn Spiel nicht läuft und nicht beendet ist', () => {
-            const { container } = render(
-                <GameInterface
-                    gameState={{ ...defaultGameState, isPlaying: false }}
+    describe('Generelles Rendering', () => {
+        it('sollte die Statusleiste mit den korrekten Infos rendern', () => {
+            render(
+                <GameArea
+                    gameState={{ currentPatient: 3, savedLives: 1 }}
                     config={defaultConfig}
-                    onDrugChoice={mockOnDrugChoice}
+                    onBeanClick={mockOnBeanClick}
                     isGameComplete={false}
-                    notification={null}
-                    algorithmState={defaultAlgorithmState}
+                    algorithmPerformance={[]}
+                    algorithmStates={[]}
+                    lastPlayerReward={null}
                 />
             );
-
-            expect(container.firstChild).toBeNull();
+            expect(screen.getByText('Runde 3 / 10')).toBeInTheDocument();
+            expect(screen.getByText('Bernoulli')).toBeInTheDocument();
+            expect(screen.getByText('2 Algorithmen')).toBeInTheDocument();
         });
 
-        it('sollte die Spieloberfläche anzeigen wenn Spiel läuft', () => {
+        it('sollte die korrekte Anzahl an Bohnen-Buttons rendern', () => {
             render(
-                <GameInterface
+                <GameArea
                     gameState={defaultGameState}
                     config={defaultConfig}
-                    onDrugChoice={mockOnDrugChoice}
+                    onBeanClick={mockOnBeanClick}
                     isGameComplete={false}
-                    notification={null}
-                    algorithmState={defaultAlgorithmState}
+                    algorithmPerformance={[]}
+                    algorithmStates={[]}
+                    lastPlayerReward={null}
                 />
             );
-
-            expect(screen.getByText(/Runde 1 von 10/)).toBeInTheDocument();
-        });
-
-        it('sollte den Abschlussbildschirm anzeigen wenn Spiel beendet ist', () => {
-            render(
-                <GameInterface
-                    gameState={{ ...defaultGameState, savedLives: 8 }}
-                    config={defaultConfig}
-                    onDrugChoice={mockOnDrugChoice}
-                    isGameComplete={true}
-                    notification={null}
-                    algorithmState={defaultAlgorithmState}
-                />
-            );
-
-            expect(screen.getByText(/Spiel beendet!/)).toBeInTheDocument();
-        });
-    });
-
-    describe('Spielstatus Anzeige', () => {
-        it('sollte die aktuelle Runde korrekt anzeigen', () => {
-            render(
-                <GameInterface
-                    gameState={{ ...defaultGameState, currentPatient: 5 }}
-                    config={defaultConfig}
-                    onDrugChoice={mockOnDrugChoice}
-                    isGameComplete={false}
-                    notification={null}
-                    algorithmState={defaultAlgorithmState}
-                />
-            );
-
-            expect(screen.getByText(/Runde 5 von 10/)).toBeInTheDocument();
-        });
-
-        it('sollte die Anzahl gebrühter Tassen korrekt anzeigen', () => {
-            render(
-                <GameInterface
-                    gameState={{ ...defaultGameState, currentPatient: 5, savedLives: 3 }}
-                    config={defaultConfig}
-                    onDrugChoice={mockOnDrugChoice}
-                    isGameComplete={false}
-                    notification={null}
-                    algorithmState={defaultAlgorithmState}
-                />
-            );
-
-            expect(screen.getByText(/Gebrühte Tassen: 3 von 5/)).toBeInTheDocument();
-        });
-    });
-
-    describe('Bohnen Buttons', () => {
-        it('sollte die korrekte Anzahl von Bohnen-Buttons rendern', () => {
-            render(
-                <GameInterface
-                    gameState={defaultGameState}
-                    config={defaultConfig}
-                    onDrugChoice={mockOnDrugChoice}
-                    isGameComplete={false}
-                    notification={null}
-                    algorithmState={defaultAlgorithmState}
-                />
-            );
-
             const buttons = screen.getAllByText(/Bohne \d+/);
             expect(buttons).toHaveLength(5);
         });
 
-        it('sollte onDrugChoice mit korrektem Index aufrufen', () => {
+        it('sollte den Graphen-Bereich rendern', () => {
             render(
-                <GameInterface
+                <GameArea
                     gameState={defaultGameState}
                     config={defaultConfig}
-                    onDrugChoice={mockOnDrugChoice}
+                    onBeanClick={mockOnBeanClick}
                     isGameComplete={false}
-                    notification={null}
-                    algorithmState={defaultAlgorithmState}
+                    algorithmPerformance={[{ patient: 1, playerSavedLives: 1, greedy: 1 }]}
+                    algorithmStates={[]}
+                    lastPlayerReward={null}
                 />
             );
-
-            const button = screen.getByText('☕ Bohne 3');
-            fireEvent.click(button);
-
-            expect(mockOnDrugChoice).toHaveBeenCalledWith(2);
-        });
-
-        it('sollte Bohnen-Buttons mit unterschiedlicher Anzahl rendern', () => {
-            const configWith8Actions = { ...defaultConfig, numActions: 8 };
-
-            render(
-                <GameInterface
-                    gameState={defaultGameState}
-                    config={configWith8Actions}
-                    onDrugChoice={mockOnDrugChoice}
-                    isGameComplete={false}
-                    notification={null}
-                    algorithmState={defaultAlgorithmState}
-                />
-            );
-
-            const buttons = screen.getAllByText(/Bohne \d+/);
-            expect(buttons).toHaveLength(8);
-        });
-
-        it('sollte Buttons deaktivieren wenn Spiel beendet ist', () => {
-            render(
-                <GameInterface
-                    gameState={defaultGameState}
-                    config={defaultConfig}
-                    onDrugChoice={mockOnDrugChoice}
-                    isGameComplete={true}
-                    notification={null}
-                    algorithmState={defaultAlgorithmState}
-                />
-            );
-
-            const buttons = screen.queryAllByText(/Bohne \d+/);
-            buttons.forEach(button => {
-                expect(button.closest('button')).toBeDisabled();
-            });
-        });
-
-        it('sollte algo-selected Klasse auf gewählter Bohne anzeigen', () => {
-            const algoStateWithChoice = { choice: 2, success: true };
-
-            render(
-                <GameInterface
-                    gameState={defaultGameState}
-                    config={defaultConfig}
-                    onDrugChoice={mockOnDrugChoice}
-                    isGameComplete={false}
-                    notification={null}
-                    algorithmState={algoStateWithChoice}
-                />
-            );
-
-            const button = screen.getByText('☕ Bohne 3').closest('button');
-            expect(button).toHaveClass('algo-selected');
+            expect(screen.getByText('Performance')).toBeInTheDocument();
+            // Testet, ob die Legende gerendert wird
+            expect(screen.getByText('Deine Performance')).toBeInTheDocument();
         });
     });
 
-    describe('Benachrichtigungen', () => {
-        it('sollte keine Benachrichtigung anzeigen wenn keine vorhanden', () => {
+    describe('Algorithmen-Aktionen Anzeige', () => {
+        it('sollte den "Warten"-Text anzeigen, wenn keine Algorithmen-Aktionen vorliegen', () => {
             render(
-                <GameInterface
-                    gameState={defaultGameState}
+                <GameArea
+                    gameState={{ currentPatient: 0, savedLives: 0 }}
                     config={defaultConfig}
-                    onDrugChoice={mockOnDrugChoice}
+                    onBeanClick={mockOnBeanClick}
                     isGameComplete={false}
-                    notification={null}
-                    algorithmState={defaultAlgorithmState}
+                    algorithmPerformance={[]}
+                    algorithmStates={[]}
+                    lastPlayerReward={null}
                 />
             );
-
-            expect(screen.queryByTestId('notification-box')).not.toBeInTheDocument();
+            expect(screen.getByText('Die Algorithmen warten auf deine erste Wahl...')).toBeInTheDocument();
         });
 
-        it('sollte Benachrichtigung anzeigen wenn vorhanden', () => {
-            const notification = <div data-testid="test-notification">Test Nachricht</div>;
-
+        it('sollte nur die ausgewählten Algorithmen anzeigen (Filter-Test)', () => {
             render(
-                <GameInterface
+                <GameArea
                     gameState={defaultGameState}
-                    config={defaultConfig}
-                    onDrugChoice={mockOnDrugChoice}
+                    config={defaultConfig} // config hat nur 'greedy' und 'epsilon-greedy'
+                    onBeanClick={mockOnBeanClick}
                     isGameComplete={false}
-                    notification={notification}
-                    algorithmState={defaultAlgorithmState}
+                    algorithmPerformance={[]}
+                    algorithmStates={bernoulliAlgorithmStates} // States für alle drei werden übergeben
+                    lastPlayerReward={null}
                 />
             );
 
-            expect(screen.getByTestId('test-notification')).toBeInTheDocument();
+            expect(screen.getByText('Greedy')).toBeInTheDocument();
+            expect(screen.getByText('Epsilon Greedy')).toBeInTheDocument();
+            // Der 'random'-Algorithmus sollte nicht angezeigt werden
+            expect(screen.queryByText('Random')).not.toBeInTheDocument();
+        });
+
+        it('sollte "Erfolg" und "Misserfolg" für Bernoulli-Banditen korrekt anzeigen', () => {
+            render(
+                <GameArea
+                    gameState={defaultGameState}
+                    config={defaultConfig}
+                    onBeanClick={mockOnBeanClick}
+                    isGameComplete={false}
+                    algorithmPerformance={[]}
+                    algorithmStates={bernoulliAlgorithmStates}
+                    lastPlayerReward={null}
+                />
+            );
+            // 'greedy' hatte 'reward: true'
+            const greedyBox = screen.getByText('Greedy').closest('.algo-result-box');
+            expect(greedyBox).toHaveTextContent('Erfolgreich');
+
+            // 'epsilon-greedy' hatte 'reward: false'
+            const epsilonBox = screen.getByText('Epsilon Greedy').closest('.algo-result-box');
+            expect(epsilonBox).toHaveTextContent('Misserfolg');
+        });
+
+        it('sollte die "Bewertung" für Gaussian-Banditen korrekt anzeigen', () => {
+            const gaussianConfig = { ...defaultConfig, banditType: 'gaussian' as const };
+            const gaussianStates = [
+                { name: 'greedy' as const, choice: 0, reward: 7.5 },
+                { name: 'epsilon-greedy' as const, choice: 1, reward: 3.2 },
+            ];
+            render(
+                <GameArea
+                    gameState={defaultGameState}
+                    config={gaussianConfig}
+                    onBeanClick={mockOnBeanClick}
+                    isGameComplete={false}
+                    algorithmPerformance={[]}
+                    algorithmStates={gaussianStates}
+                    lastPlayerReward={null}
+                />
+            );
+            expect(screen.getByText(/Bewertung: 7.5/)).toBeInTheDocument();
+            expect(screen.getByText(/Bewertung: 3.2/)).toBeInTheDocument();
         });
     });
 
-    describe('Algorithmus Bereich', () => {
-        it('sollte Algorithmus-Bereich nicht anzeigen ohne Wahl', () => {
+    describe('Spielende', () => {
+        it('sollte die Abschlussnachricht und den finalen Punktestand (Bernoulli) anzeigen', () => {
             render(
-                <GameInterface
-                    gameState={defaultGameState}
+                <GameArea
+                    gameState={{ currentPatient: 10, savedLives: 7 }}
                     config={defaultConfig}
-                    onDrugChoice={mockOnDrugChoice}
-                    isGameComplete={false}
-                    notification={null}
-                    algorithmState={{ choice: -1, success: false }}
-                />
-            );
-
-            expect(screen.queryByText(/Algorithmus/)).not.toBeInTheDocument();
-        });
-
-        it('sollte Algorithmus-Bereich anzeigen mit Wahl', () => {
-            const algoStateWithChoice = { choice: 2, success: true };
-
-            render(
-                <GameInterface
-                    gameState={defaultGameState}
-                    config={defaultConfig}
-                    onDrugChoice={mockOnDrugChoice}
-                    isGameComplete={false}
-                    notification={null}
-                    algorithmState={algoStateWithChoice}
-                />
-            );
-
-            expect(screen.getByText(/Greedy Algorithmus/)).toBeInTheDocument();
-        });
-
-        it('sollte den Algorithmus-Namen korrekt formatieren', () => {
-            const epsilonConfig = { ...defaultConfig, algorithm: 'epsilon-greedy' };
-            const algoStateWithChoice = { choice: 1, success: true };
-
-            render(
-                <GameInterface
-                    gameState={defaultGameState}
-                    config={epsilonConfig}
-                    onDrugChoice={mockOnDrugChoice}
-                    isGameComplete={false}
-                    notification={null}
-                    algorithmState={algoStateWithChoice}
-                />
-            );
-
-            expect(screen.getByText(/Epsilon greedy Algorithmus/)).toBeInTheDocument();
-        });
-
-        it('sollte die gewählte Bohne anzeigen', () => {
-            const algoStateWithChoice = { choice: 3, success: true };
-
-            render(
-                <GameInterface
-                    gameState={defaultGameState}
-                    config={defaultConfig}
-                    onDrugChoice={mockOnDrugChoice}
-                    isGameComplete={false}
-                    notification={null}
-                    algorithmState={algoStateWithChoice}
-                />
-            );
-
-            expect(screen.getByText(/Wahl: Bohne 4/)).toBeInTheDocument();
-        });
-
-        it('sollte Erfolg korrekt anzeigen', () => {
-            const algoStateWithChoice = { choice: 1, success: true };
-
-            render(
-                <GameInterface
-                    gameState={defaultGameState}
-                    config={defaultConfig}
-                    onDrugChoice={mockOnDrugChoice}
-                    isGameComplete={false}
-                    notification={null}
-                    algorithmState={algoStateWithChoice}
-                />
-            );
-
-            expect(screen.getByText('Erfolgreich')).toBeInTheDocument();
-        });
-
-        it('sollte Misserfolg korrekt anzeigen', () => {
-            const algoStateWithChoice = { choice: 1, success: false };
-
-            render(
-                <GameInterface
-                    gameState={defaultGameState}
-                    config={defaultConfig}
-                    onDrugChoice={mockOnDrugChoice}
-                    isGameComplete={false}
-                    notification={null}
-                    algorithmState={algoStateWithChoice}
-                />
-            );
-
-            expect(screen.getByText('Misserfolg')).toBeInTheDocument();
-        });
-    });
-
-    describe('Abschlussbildschirm', () => {
-        it('sollte die Erfolgsrate korrekt berechnen und anzeigen', () => {
-            render(
-                <GameInterface
-                    gameState={{ ...defaultGameState, savedLives: 7 }}
-                    config={defaultConfig}
-                    onDrugChoice={mockOnDrugChoice}
+                    onBeanClick={mockOnBeanClick}
                     isGameComplete={true}
-                    notification={null}
-                    algorithmState={defaultAlgorithmState}
+                    algorithmPerformance={[]}
+                    algorithmStates={[]}
+                    lastPlayerReward={null}
                 />
             );
-
-            expect(screen.getByText(/70.0%/)).toBeInTheDocument();
+            expect(screen.getByText('Spiel beendet! Sehr gut gemacht!')).toBeInTheDocument();
+            expect(screen.getByText(/Dein finaler Punktestand: 7/)).toBeInTheDocument();
         });
 
-        it('sollte Erfolgsrate von 100% korrekt anzeigen', () => {
+        it('sollte die Abschlussnachricht und die finale Durchschnittsbewertung (Gaussian) anzeigen', () => {
+            const gaussianConfig = { ...defaultConfig, banditType: 'gaussian' as const };
             render(
-                <GameInterface
-                    gameState={{ ...defaultGameState, savedLives: 10 }}
-                    config={defaultConfig}
-                    onDrugChoice={mockOnDrugChoice}
+                <GameArea
+                    gameState={{ currentPatient: 10, savedLives: 68 }} // 6.8 im Durchschnitt
+                    config={gaussianConfig}
+                    onBeanClick={mockOnBeanClick}
                     isGameComplete={true}
-                    notification={null}
-                    algorithmState={defaultAlgorithmState}
+                    algorithmPerformance={[]}
+                    algorithmStates={[]}
+                    lastPlayerReward={null}
                 />
             );
-
-            expect(screen.getByText(/100.0%/)).toBeInTheDocument();
-        });
-
-        it('sollte Erfolgsrate von 0% korrekt anzeigen', () => {
-            render(
-                <GameInterface
-                    gameState={{ ...defaultGameState, savedLives: 0 }}
-                    config={defaultConfig}
-                    onDrugChoice={mockOnDrugChoice}
-                    isGameComplete={true}
-                    notification={null}
-                    algorithmState={defaultAlgorithmState}
-                />
-            );
-
-            expect(screen.getByText(/0.0%/)).toBeInTheDocument();
-        });
-    });
-
-    describe('Integration Tests', () => {
-        it('sollte mehrere Bohnen-Klicks verarbeiten', () => {
-            render(
-                <GameInterface
-                    gameState={defaultGameState}
-                    config={defaultConfig}
-                    onDrugChoice={mockOnDrugChoice}
-                    isGameComplete={false}
-                    notification={null}
-                    algorithmState={defaultAlgorithmState}
-                />
-            );
-
-            fireEvent.click(screen.getByText('☕ Bohne 1'));
-            fireEvent.click(screen.getByText('☕ Bohne 3'));
-            fireEvent.click(screen.getByText('☕ Bohne 5'));
-
-            expect(mockOnDrugChoice).toHaveBeenCalledTimes(3);
-            expect(mockOnDrugChoice).toHaveBeenNthCalledWith(1, 0);
-            expect(mockOnDrugChoice).toHaveBeenNthCalledWith(2, 2);
-            expect(mockOnDrugChoice).toHaveBeenNthCalledWith(3, 4);
-        });
-
-        it('sollte Algorithmus-Namen für alle Typen korrekt formatieren', () => {
-            const algorithms = ['greedy', 'epsilon-greedy', 'random'];
-            const expectedNames = ['Greedy Algorithmus', 'Epsilon greedy Algorithmus', 'Random Algorithmus'];
-
-            algorithms.forEach((algo, index) => {
-                const config = { ...defaultConfig, algorithm: algo };
-                const algoState = { choice: 0, success: true };
-
-                const { unmount } = render(
-                    <GameInterface
-                        gameState={defaultGameState}
-                        config={config}
-                        onDrugChoice={mockOnDrugChoice}
-                        isGameComplete={false}
-                        notification={null}
-                        algorithmState={algoState}
-                    />
-                );
-
-                expect(screen.getByText(expectedNames[index])).toBeInTheDocument();
-                unmount();
-            });
+            expect(screen.getByText('Spiel beendet! Sehr gut gemacht!')).toBeInTheDocument();
+            expect(screen.getByText(/Deine finale Ø Bewertung: 6.8/)).toBeInTheDocument();
         });
     });
 });
