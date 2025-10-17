@@ -45,7 +45,7 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3 # 6. Lädt den fertigen 'dist'-Ordner hoch
         with:
-          path: './BanditTool/banditTool/dist'
+          path: './banditTool/dist'
 
       - name: Deploy to GitHub Pages
         id: deployment
