@@ -1,10 +1,10 @@
 # Name des Workflows, der im "Actions"-Tab auf GitHub angezeigt wird
 name: Deploy to GitHub Pages
 
-# Löst den Workflow bei jedem Push auf den 'main'-Branch aus
+# Löst den Workflow bei jedem Push auf den 'main' oder 'Ticket#53'-Branch aus
 on:
   push:
-    branches: [ "Ticket#53" ]
+    branches: [ "main", "Ticket#53" ] # Füge hier alle Branches hinzu, die deployen sollen
   workflow_dispatch:
 
 # Erlaubt dem Skript, eine GitHub Pages-Veröffentlichung zu erstellen
@@ -27,15 +27,13 @@ jobs:
         with:
           node-version: "20"
           cache: 'npm'
-          cache-dependency-path: BanditTool/package-lock.json
+          # Die Action findet die 'package-lock.json' jetzt automatisch im Hauptverzeichnis.
 
       - name: Install dependencies
         run: npm install # 3. Installiert alle Pakete
-        working-directory: BanditTool
 
       - name: Build project
         run: npm run build # 4. Baut dein Projekt
-        working-directory: BanditTool
 
       - name: Setup Pages
         uses: actions/configure-pages@v4 # 5. Konfiguriert GitHub Pages
@@ -43,7 +41,7 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3 # 6. Lädt den fertigen 'dist'-Ordner hoch
         with:
-          path: './BanditTool/dist'
+          path: './dist'
 
       - name: Deploy to GitHub Pages
         id: deployment
