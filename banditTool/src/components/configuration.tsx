@@ -192,7 +192,7 @@ export function ConfigPanel({
 
         'ucb': {
 
-            description: "Wählt die Aktion mit dem höchsten UCB-Wert: Durchschnittsreward + sqrt(2 * ln(Gesamtversuche) / Versuche_dieser_Aktion)",
+            description: "Balanciert Exploration und Exploitation.",
             icon: <Scale className="algorithm-card-icon"/>,
         }
 
