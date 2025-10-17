@@ -10,6 +10,14 @@ vi.mock('recharts', async () => {
     return {
         ...OriginalModule,
         ResponsiveContainer: ({ children }) => <div className="responsive-container">{children}</div>,
+        LineChart: ({ children }) => <div className="line-chart">{children}</div>,
+        // Wir rendern die 'name'-Prop der Line, damit der Test sie finden kann
+        Line: ({ name }) => <div className="line">{name}</div>,
+        Legend: ({ children }) => <div className="legend">{children}</div>,
+        XAxis: () => <div className="x-axis" />,
+        YAxis: () => <div className="y-axis" />,
+        Tooltip: () => <div className="tooltip" />,
+        CartesianGrid: () => <div className="grid" />,
     };
 });
 

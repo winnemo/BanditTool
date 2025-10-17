@@ -223,5 +223,6 @@ export const useGameLogic = (config: Config) => {
         notification,
         algorithmStates,
         lastPlayerReward,
+        algorithmStats,
     };
 };
