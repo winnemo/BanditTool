@@ -14,7 +14,7 @@ export const generateDrugProbabilities = (numActions, banditType) => {
         } else if(banditType == 'gaussian') {
             probs.push({
                 mean: Math.random() * 6 + 3, // Werte 3 bis 9
-                std:  Math.random() * 1.0 + 0.5 // Werte 0.5 bis 1.5
+                std:  Math.random() + 0.5 // Werte 0.5 bis 1.5
             });
         } else {
             throw new Error(`Unbekannter Bandit-Typ: "${banditType}"`)
@@ -29,7 +29,7 @@ export const generateDrugProbabilities = (numActions, banditType) => {
  * @param {number} std - Die Standardabweichung der Verteilung.
  * @returns {number} Eine normalverteilte Zufallszahl.
  */
-function getGaussianRandom(mean, std) {
+export function getGaussianRandom(mean, std) {
     let u = 0, v = 0;
     // Stellt sicher, dass u und v nicht null sind, um log(0) zu vermeiden.
     while(u === 0) u = Math.random();

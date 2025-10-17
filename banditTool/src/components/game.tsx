@@ -5,7 +5,7 @@ import './game.css';
 
 // Die Typen aus dem useGameLogic Hook importieren/neu definieren
 // Es ist besser, diese aus einer zentralen 'types.ts' Datei zu importieren
-type AlgorithmType = 'greedy' | 'epsilon-greedy' | 'random' | 'ucb' ;
+type AlgorithmType = 'greedy' | 'epsilon-greedy' | 'random' | 'ucb' | 'thompson';
 interface GameState {
     currentPatient: number;
     savedLives: number;

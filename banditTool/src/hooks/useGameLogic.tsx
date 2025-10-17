@@ -7,7 +7,7 @@ import { generateDrugProbabilities, simulateDrugOutcome, initializeDrugStats } f
 // Beschreiben die zentralen Datenstrukturen der Spiellogik.
 // ==================================================================
 
-type AlgorithmType = 'greedy' | 'epsilon-greedy' | 'random' | 'ucb';
+type AlgorithmType = 'greedy' | 'epsilon-greedy' | 'random' | 'ucb' | 'thompson';
 
 interface Config {
     numActions: number;
@@ -47,7 +47,7 @@ interface PerformanceDataPoint {
 // ==================================================================
 // Implementierung
 // ==================================================================
-const ALL_ALGORITHMS: AlgorithmType[] = ['greedy', 'epsilon-greedy', 'random', 'ucb'];
+const ALL_ALGORITHMS: AlgorithmType[] = ['greedy', 'epsilon-greedy', 'random', 'ucb', 'thompson'];
 
 /**
  * Custom Hook, der die gesamte Logik für das Bandit-Spiel kapselt.
@@ -142,7 +142,10 @@ export const useGameLogic = (config: Config) => {
             if (!currentAlgoStats) return;
 
             // Algorithmus trifft seine Wahl basierend auf seinen aktuellen Statistiken
-            const choice = algorithms[algoName](currentAlgoStats, config.numActions);
+            const choice = algorithms[algoName](currentAlgoStats, {
+                numActions: config.numActions,
+                banditType: config.banditType
+            });
             const reward = outcomes[patientIndex][choice];
 
             // Aktualisiere die Statistiken des Algorithmus

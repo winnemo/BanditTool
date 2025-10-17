@@ -10,7 +10,7 @@ import {
 
     TrendingUp,
 
-    Shuffle, Scale,
+    Shuffle, Scale, BrainCircuit,
 
 } from "lucide-react";
 
@@ -24,7 +24,7 @@ import './configuration.css';
 
 // ==================================================================
 
-type AlgorithmType = "greedy" | "epsilon-greedy" | "random" | "ucb";
+type AlgorithmType = "greedy" | "epsilon-greedy" | "random" | "ucb" | "thompson";
 
 
 
@@ -194,6 +194,12 @@ export function ConfigPanel({
 
             description: "Balanciert Exploration und Exploitation.",
             icon: <Scale className="algorithm-card-icon"/>,
+        },
+
+        'thompson': {
+
+            description: "Wählt die Option, die aktuell die höchste wahrscheinliche Erfolgsrate hat.",
+            icon: <BrainCircuit className="algorithm-card-icon"/>,
         }
 
     };
@@ -366,7 +372,7 @@ export function ConfigPanel({
 
                         <div className="algorithm-cards">
 
-                            {(["greedy", "epsilon-greedy", "random", "ucb"] as AlgorithmType[]).map((algo) => (
+                            {(["greedy", "epsilon-greedy", "random", "ucb", "thompson"] as AlgorithmType[]).map((algo) => (
 
                                 <div
 
