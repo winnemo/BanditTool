@@ -1,5 +1,5 @@
 import { Coffee} from 'lucide-react';
-import './InfoBox.css';
+import './infoBox.css';
 
 export function InfoBox() {
     return (
