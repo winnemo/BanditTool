@@ -10,7 +10,7 @@ import {
 
     TrendingUp,
 
-    Shuffle,
+    Shuffle, Scale,
 
 } from "lucide-react";
 
@@ -24,7 +24,7 @@ import './configuration.css';
 
 // ==================================================================
 
-type AlgorithmType = "greedy" | "epsilon-greedy" | "random";
+type AlgorithmType = "greedy" | "epsilon-greedy" | "random" | "ucb";
 
 
 
@@ -189,6 +189,12 @@ export function ConfigPanel({
             icon: <Shuffle className="algorithm-card-icon" />,
 
         },
+
+        'ucb': {
+
+            description: "Wählt die Aktion mit dem höchsten UCB-Wert: Durchschnittsreward + sqrt(2 * ln(Gesamtversuche) / Versuche_dieser_Aktion)",
+            icon: <Scale className="algorithm-card-icon"/>,
+        }
 
     };
 
@@ -360,7 +366,7 @@ export function ConfigPanel({
 
                         <div className="algorithm-cards">
 
-                            {(["greedy", "epsilon-greedy", "random"] as AlgorithmType[]).map((algo) => (
+                            {(["greedy", "epsilon-greedy", "random", "ucb"] as AlgorithmType[]).map((algo) => (
 
                                 <div
 
