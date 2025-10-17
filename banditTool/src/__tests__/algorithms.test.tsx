@@ -55,11 +55,14 @@ describe('algorithms', () => {
                 drug1: { attempts: 10, sumOfRewards: 7 },
                 drug2: { attempts: 10, sumOfRewards: 5 }
             };
-            const numActions = 3;
+            const config = {
+                numActions: 5,
+                banditType: 'bernoulli' // Der Typ ist für diesen Test nicht relevant, muss aber für die Signatur vorhanden sein.
+            };
 
-            const result = algorithms['epsilon-greedy'](drugStats, numActions);
+            const result = algorithms['epsilon-greedy'](drugStats, config);
             expect(result).toBeGreaterThanOrEqual(0);
-            expect(result).toBeLessThan(numActions);
+            expect(result).toBeLessThan(config.numActions);
         });
 
         it('sollte manchmal explorieren (über mehrere Aufrufe)', () => {
@@ -83,20 +86,26 @@ describe('algorithms', () => {
     describe('random', () => {
         it('sollte einen gültigen zufälligen Index zurückgeben', () => {
             const drugStats = {};
-            const numActions = 5;
+            const config = {
+                numActions: 5,
+                banditType: 'bernoulli' // Der Typ ist für diesen Test nicht relevant, muss aber für die Signatur vorhanden sein.
+            };
 
-            const result = algorithms.random(drugStats, numActions);
+            const result = algorithms.random(drugStats, config);
             expect(result).toBeGreaterThanOrEqual(0);
-            expect(result).toBeLessThan(numActions);
+            expect(result).toBeLessThan(config.numActions);
         });
 
         it('sollte verschiedene Werte über mehrere Aufrufe zurückgeben', () => {
             const drugStats = {};
-            const numActions = 3;
+            const config = {
+                numActions: 5,
+                banditType: 'bernoulli' // Der Typ ist für diesen Test nicht relevant, muss aber für die Signatur vorhanden sein.
+            };
 
             const results = new Set();
             for (let i = 0; i < 50; i++) {
-                results.add(algorithms.random(drugStats, numActions));
+                results.add(algorithms.random(drugStats, config));
             }
 
             // Bei 50 zufälligen Versuchen sollten wir mehrere verschiedene Werte sehen
