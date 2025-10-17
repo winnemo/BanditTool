@@ -34,11 +34,11 @@ jobs:
 
       - name: Install dependencies
         run: npm install # 3. Installiert alle Pakete
-        #working-directory: banditTool
+        working-directory: banditTool
 
       - name: Build project
         run: npm run build # 4. Baut dein Projekt
-        #working-directory: banditTool
+        working-directory: banditTool
 
       - name: Setup Pages
         uses: actions/configure-pages@v4 # 5. Konfiguriert GitHub Pages
