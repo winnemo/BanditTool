@@ -1,9 +1,11 @@
+// in game.test.tsx
+
 import { render, screen, within } from '@testing-library/react';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import '@testing-library/jest-dom';
 import { GameArea } from "../components/game.tsx";
 
-// Der Mock für 'recharts' bleibt unverändert und korrekt
+// Mock für 'recharts', der jetzt alle benötigten Teile enthält
 vi.mock('recharts', async () => {
     const OriginalModule = await vi.importActual('recharts');
     return {
@@ -20,77 +22,65 @@ vi.mock('recharts', async () => {
 });
 
 describe('GameArea', () => {
-    // ... (deine mockOnBeanClick, defaultConfig, etc. bleiben unverändert)
     const mockOnBeanClick = vi.fn();
-    const defaultConfig = { /* ... */ };
-    const defaultGameState = { /* ... */ };
-    const bernoulliAlgorithmStates = [ /* ... */ ];
+    const defaultConfig = {
+        banditType: 'bernoulli' as const,
+        numActions: 5,
+        numIterations: 10,
+        algorithms: ['greedy', 'epsilon-greedy']
+    };
+    const defaultGameState = { currentPatient: 1, savedLives: 0 };
+    const bernoulliAlgorithmStates = [
+        { name: 'greedy' as const, choice: 0, reward: true },
+        { name: 'epsilon-greedy' as const, choice: 1, reward: false },
+        { name: 'random' as const, choice: 2, reward: true },
+    ];
 
     beforeEach(() => {
         vi.clearAllMocks();
     });
 
-    // Der "Generelles Rendering"-Block bleibt unverändert
-    describe('Generelles Rendering', () => { /* ... */ });
-
-    describe('Algorithmen-Aktionen Anzeige', () => {
-        it('sollte den "Warten"-Text anzeigen, wenn keine Algorithmen-Aktionen vorliegen', () => {
-            // ... (dieser Test bleibt unverändert)
+    // HIER WERDEN DIE FEHLENDEN TESTS EINGEFÜGT
+    describe('Generelles Rendering', () => {
+        it('sollte die Statusleiste mit den korrekten Infos rendern', () => {
+            render(<GameArea gameState={{ currentPatient: 3, savedLives: 1 }} config={defaultConfig} onBeanClick={mockOnBeanClick} isGameComplete={false} algorithmPerformance={[]} algorithmStates={[]} lastPlayerReward={null} />);
+            expect(screen.getByText('Runde 3 / 10')).toBeInTheDocument();
+            expect(screen.getByText('Bernoulli')).toBeInTheDocument();
+            expect(screen.getByText('2 Algorithmen')).toBeInTheDocument();
         });
 
-        // GEÄNDERT: Dieser Test verwendet jetzt 'within'
+        it('sollte den Graphen-Bereich rendern', () => {
+            render(<GameArea gameState={defaultGameState} config={defaultConfig} onBeanClick={mockOnBeanClick} isGameComplete={false} algorithmPerformance={[{ patient: 1, playerSavedLives: 1, greedy: 1 }]} algorithmStates={[]} lastPlayerReward={null} />);
+            expect(screen.getByText('Performance')).toBeInTheDocument();
+            expect(screen.getByText('Deine Performance')).toBeInTheDocument();
+        });
+    });
+
+    describe('Algorithmen-Aktionen Anzeige', () => {
         it('sollte nur die ausgewählten Algorithmen anzeigen (Filter-Test)', () => {
-            render(
-                <GameArea
-                    gameState={defaultGameState}
-                    config={defaultConfig} // config hat 'greedy' und 'epsilon-greedy'
-                    onBeanClick={mockOnBeanClick}
-                    isGameComplete={false}
-                    algorithmPerformance={[]}
-                    algorithmStates={bernoulliAlgorithmStates}
-                    lastPlayerReward={null}
-                />
-            );
-
-            // 1. Finde den Container der Algorithmen-Aktionen
+            render(<GameArea gameState={defaultGameState} config={defaultConfig} onBeanClick={mockOnBeanClick} isGameComplete={false} algorithmPerformance={[]} algorithmStates={bernoulliAlgorithmStates} lastPlayerReward={null} />);
             const actionsContainer = screen.getByText('Algorithmen-Aktionen').closest('.card');
-
-            // 2. Suche nur INNERHALB dieses Containers
             expect(within(actionsContainer!).getByText('Greedy')).toBeInTheDocument();
             expect(within(actionsContainer!).getByText('Epsilon Greedy')).toBeInTheDocument();
             expect(within(actionsContainer!).queryByText('Random')).not.toBeInTheDocument();
         });
 
-        // GEÄNDERT: Dieser Test verwendet jetzt auch 'within'
         it('sollte "Erfolg" und "Misserfolg" für Bernoulli-Banditen korrekt anzeigen', () => {
-            render(
-                <GameArea
-                    gameState={defaultGameState}
-                    config={defaultConfig}
-                    onBeanClick={mockOnBeanClick}
-                    isGameComplete={false}
-                    algorithmPerformance={[]}
-                    algorithmStates={bernoulliAlgorithmStates}
-                    lastPlayerReward={null}
-                />
-            );
-
-            // 1. Finde wieder den spezifischen Container
+            render(<GameArea gameState={defaultGameState} config={defaultConfig} onBeanClick={mockOnBeanClick} isGameComplete={false} algorithmPerformance={[]} algorithmStates={bernoulliAlgorithmStates} lastPlayerReward={null} />);
             const actionsContainer = screen.getByText('Algorithmen-Aktionen').closest('.card');
-
-            // 2. Finde die Boxen innerhalb des Containers
             const greedyBox = within(actionsContainer!).getByText('Greedy').closest('.algo-result-box');
             expect(greedyBox).toHaveTextContent('Erfolgreich');
-
             const epsilonBox = within(actionsContainer!).getByText('Epsilon Greedy').closest('.algo-result-box');
             expect(epsilonBox).toHaveTextContent('Misserfolg');
         });
-
-        it('sollte die "Bewertung" für Gaussian-Banditen korrekt anzeigen', () => {
-            // ... (dieser Test bleibt unverändert)
-        });
     });
 
-    // Der "Spielende"-Block bleibt unverändert
-    describe('Spielende', () => { /* ... */ });
+    // HIER WERDEN DIE FEHLENDEN TESTS EINGEFÜGT
+    describe('Spielende', () => {
+        it('sollte die Abschlussnachricht und den finalen Punktestand (Bernoulli) anzeigen', () => {
+            render(<GameArea gameState={{ currentPatient: 10, savedLives: 7 }} config={defaultConfig} onBeanClick={mockOnBeanClick} isGameComplete={true} algorithmPerformance={[]} algorithmStates={[]} lastPlayerReward={null} />);
+            expect(screen.getByText('Spiel beendet! Sehr gut gemacht!')).toBeInTheDocument();
+            expect(screen.getByText(/Dein finaler Punktestand: 7/)).toBeInTheDocument();
+        });
+    });
 });
