@@ -4,16 +4,17 @@ import { render, screen, within } from '@testing-library/react';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import '@testing-library/jest-dom';
 import { GameArea } from "../components/game.tsx";
+import {type Config, type GameState, type AlgorithmState, type AlgorithmType} from '../hooks/useGameLogic';
 
 // Mock für 'recharts', der jetzt alle benötigten Teile enthält
 vi.mock('recharts', async () => {
     const OriginalModule = await vi.importActual('recharts');
     return {
         ...OriginalModule,
-        ResponsiveContainer: ({ children }) => <div className="responsive-container">{children}</div>,
-        LineChart: ({ children }) => <div className="line-chart">{children}</div>,
-        Line: ({ name }) => <div className="line">{name}</div>,
-        Legend: ({ children }) => <div className="legend">{children}</div>,
+        ResponsiveContainer: ({ children } :{children: React.ReactNode}) => <div className="responsive-container">{children}</div>,
+        LineChart: ({ children } :{children: React.ReactNode}) => <div className="line-chart">{children}</div>,
+        Line: ({ name } :{name: string}) => <div className="line">{name}</div>,
+        Legend: ({ children } : {children: React.ReactNode}) => <div className="legend">{children}</div>,
         XAxis: () => <div className="x-axis" />,
         YAxis: () => <div className="y-axis" />,
         Tooltip: () => <div className="tooltip" />,
@@ -23,14 +24,14 @@ vi.mock('recharts', async () => {
 
 describe('GameArea', () => {
     const mockOnBeanClick = vi.fn();
-    const defaultConfig = {
+    const defaultConfig: Config = {
         banditType: 'bernoulli' as const,
         numActions: 5,
         numIterations: 10,
-        algorithms: ['greedy', 'epsilon-greedy']
+        algorithms: ['greedy', 'epsilon-greedy'] as AlgorithmType[],
     };
-    const defaultGameState = { currentPatient: 1, savedLives: 0 };
-    const bernoulliAlgorithmStates = [
+    const defaultGameState: Partial<GameState> = { currentPatient: 1, savedLives: 0 };
+    const bernoulliAlgorithmStates: AlgorithmState[] = [
         { name: 'greedy' as const, choice: 0, reward: true },
         { name: 'epsilon-greedy' as const, choice: 1, reward: false },
         { name: 'random' as const, choice: 2, reward: true },
@@ -50,7 +51,7 @@ describe('GameArea', () => {
         });
 
         it('sollte den Graphen-Bereich rendern', () => {
-            render(<GameArea gameState={defaultGameState} config={defaultConfig} onBeanClick={mockOnBeanClick} isGameComplete={false} algorithmPerformance={[{ patient: 1, playerSavedLives: 1, greedy: 1 }]} algorithmStates={[]} lastPlayerReward={null} />);
+            render(<GameArea gameState={defaultGameState as GameState} config={defaultConfig} onBeanClick={mockOnBeanClick} isGameComplete={false} algorithmPerformance={[{ patient: 1, playerSavedLives: 1, greedy: 1 }]} algorithmStates={[]} lastPlayerReward={null} />);
             expect(screen.getByText('Performance')).toBeInTheDocument();
             expect(screen.getByText('Deine Performance')).toBeInTheDocument();
         });
@@ -58,19 +59,19 @@ describe('GameArea', () => {
 
     describe('Algorithmen-Aktionen Anzeige', () => {
         it('sollte nur die ausgewählten Algorithmen anzeigen (Filter-Test)', () => {
-            render(<GameArea gameState={defaultGameState} config={defaultConfig} onBeanClick={mockOnBeanClick} isGameComplete={false} algorithmPerformance={[]} algorithmStates={bernoulliAlgorithmStates} lastPlayerReward={null} />);
-            const actionsContainer = screen.getByText('Algorithmen-Aktionen').closest('.card');
-            expect(within(actionsContainer!).getByText('Greedy')).toBeInTheDocument();
-            expect(within(actionsContainer!).getByText('Epsilon Greedy')).toBeInTheDocument();
-            expect(within(actionsContainer!).queryByText('Random')).not.toBeInTheDocument();
+            render(<GameArea gameState={defaultGameState as GameState} config={defaultConfig} onBeanClick={mockOnBeanClick} isGameComplete={false} algorithmPerformance={[]} algorithmStates={bernoulliAlgorithmStates} lastPlayerReward={null} />);
+            const actionsContainer = screen.getByText('Algorithmen-Aktionen').closest('.card') as HTMLElement;
+            expect(within(actionsContainer).getByText('Greedy')).toBeInTheDocument();
+            expect(within(actionsContainer).getByText('Epsilon Greedy')).toBeInTheDocument();
+            expect(within(actionsContainer).queryByText('Random')).not.toBeInTheDocument();
         });
 
         it('sollte "Erfolg" und "Misserfolg" für Bernoulli-Banditen korrekt anzeigen', () => {
-            render(<GameArea gameState={defaultGameState} config={defaultConfig} onBeanClick={mockOnBeanClick} isGameComplete={false} algorithmPerformance={[]} algorithmStates={bernoulliAlgorithmStates} lastPlayerReward={null} />);
-            const actionsContainer = screen.getByText('Algorithmen-Aktionen').closest('.card');
-            const greedyBox = within(actionsContainer!).getByText('Greedy').closest('.algo-result-box');
+            render(<GameArea gameState={defaultGameState as GameState} config={defaultConfig} onBeanClick={mockOnBeanClick} isGameComplete={false} algorithmPerformance={[]} algorithmStates={bernoulliAlgorithmStates} lastPlayerReward={null} />);
+            const actionsContainer = screen.getByText('Algorithmen-Aktionen').closest('.card') as HTMLElement;
+            const greedyBox = within(actionsContainer).getByText('Greedy').closest('.algo-result-box')!;
             expect(greedyBox).toHaveTextContent('Erfolgreich');
-            const epsilonBox = within(actionsContainer!).getByText('Epsilon Greedy').closest('.algo-result-box');
+            const epsilonBox = within(actionsContainer).getByText('Epsilon Greedy').closest('.algo-result-box')!;
             expect(epsilonBox).toHaveTextContent('Misserfolg');
         });
     });

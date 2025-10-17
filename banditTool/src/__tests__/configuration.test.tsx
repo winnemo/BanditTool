@@ -3,6 +3,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import '@testing-library/jest-dom';
 // Name der Komponente an die neue Datei angepasst
 import { ConfigPanel } from "../components/configuration.tsx";
+import { type Config, type AlgorithmType } from '../hooks/useGameLogic';
 
 describe('ConfigPanel', () => {
     // Mock-Funktionen bleiben gleich
@@ -11,11 +12,11 @@ describe('ConfigPanel', () => {
     const mockOnStopGame = vi.fn();
 
     // defaultConfig an die neue Struktur angepasst (algorithms ist jetzt ein Array)
-    const defaultConfig = {
+    const defaultConfig: Config = {
         banditType: 'bernoulli',
         numActions: 5,
         numIterations: 10,
-        algorithms: ['greedy'] // Startet mit einem ausgewählten Algorithmus
+        algorithms: ['greedy'] as AlgorithmType[],
     };
 
     beforeEach(() => {
@@ -146,7 +147,7 @@ describe('ConfigPanel', () => {
         });
 
         it('sollte einen Algorithmus zur Auswahl hinzufügen beim Klick auf eine nicht ausgewählte Karte', () => {
-            const configWithoutRandom = { ...defaultConfig, algorithms: ['greedy'] };
+            const configWithoutRandom = { ...defaultConfig, algorithms: ['greedy'] as AlgorithmType[]};
             render(
                 <ConfigPanel
                     config={configWithoutRandom}
@@ -166,7 +167,7 @@ describe('ConfigPanel', () => {
         });
 
         it('sollte einen Algorithmus aus der Auswahl entfernen beim Klick auf eine ausgewählte Karte', () => {
-            const configWithTwo = { ...defaultConfig, algorithms: ['greedy', 'random'] };
+            const configWithTwo = { ...defaultConfig, algorithms: ['greedy', 'random'] as AlgorithmType[]};
             render(
                 <ConfigPanel
                     config={configWithTwo}
@@ -181,7 +182,7 @@ describe('ConfigPanel', () => {
 
             expect(mockSetConfig).toHaveBeenCalledWith({
                 ...configWithTwo,
-                algorithms: ['random'] // 'greedy' wurde entfernt
+                algorithms: ['random'] as AlgorithmType[] // 'greedy' wurde entfernt
             });
         });
     });

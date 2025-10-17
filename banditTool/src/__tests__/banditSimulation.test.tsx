@@ -1,15 +1,17 @@
 import {
     generateDrugProbabilities,
     initializeDrugStats,
-    simulateDrugOutcome
+    simulateDrugOutcome,
 } from '../utils/banditSimulation';
+
+import { type DrugStats } from '../hooks/useGameLogic';
 import { describe, test, expect } from 'vitest';
 
 // ## Tests für initializeDrugStats ##
 describe('initializeDrugStats', () => {
     test('sollte ein Statistik-Objekt für 3 Aktionen korrekt erstellen', () => {
         const numActions = 3;
-        const stats = initializeDrugStats(numActions);
+        const stats: DrugStats = initializeDrugStats(numActions);
 
         expect(Object.keys(stats)).toHaveLength(3);
         // Prüft jetzt auf 'sumOfRewards'
@@ -68,7 +70,14 @@ describe('simulateDrugOutcome', () => {
         const iterations = 100;
 
         for (let i = 0; i < iterations; i++) {
-            sum += simulateDrugOutcome(0, probabilities, 'gaussian');
+            // Schritt 1: Ergebnis der Funktion abrufen
+            const result = simulateDrugOutcome(0, probabilities, 'gaussian');
+
+            // Ergebnis explizit in eine Zahl umwandeln
+            const numericResult = typeof result === 'boolean' ? (result ? 1 : 0) : result;
+
+            // Schritt 2: Den sicheren Zahlenwert zu sum addieren
+            sum += numericResult;
         }
         const average = sum / iterations;
 

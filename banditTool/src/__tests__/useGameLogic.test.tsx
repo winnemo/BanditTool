@@ -1,5 +1,5 @@
 import { renderHook, act } from '@testing-library/react';
-import { useGameLogic } from '../hooks/useGameLogic.tsx';
+import { useGameLogic, type Config,  type AlgorithmType, type DrugStats } from '../hooks/useGameLogic';
 import { describe, it, expect, vi } from 'vitest';
 
 // --- Updated Mocks for Vitest ---
@@ -16,8 +16,8 @@ vi.mock('../utils/banditSimulation', () => ({
         return probabilities[drugIndex] > 0.5; // true for index 1, false for index 0
     }),
     // Updated to use 'sumOfRewards'
-    initializeDrugStats: vi.fn((numActions) => {
-        const stats = {};
+    initializeDrugStats: vi.fn((numActions) : DrugStats => {
+        const stats: DrugStats = {};
         for (let i = 0; i < numActions; i++) {
             stats[`drug${i}`] = { attempts: 0, sumOfRewards: 0 };
         }
@@ -37,11 +37,11 @@ vi.mock('../utils/algorithms', () => ({
 // --- Test Suite ---
 describe('useGameLogic', () => {
     // Updated defaultConfig to match the new hook's expectations
-    const defaultConfig = {
+    const defaultConfig: Config = {
         numActions: 2,
         numIterations: 5,
         banditType: 'bernoulli' as const, // explicitly type for TS
-        algorithms: ['greedy', 'epsilon-greedy'] // Array of selected algorithms
+        algorithms: ['greedy', 'epsilon-greedy'] as AlgorithmType[],// Array of selected algorithms
     };
 
     it('sollte mit dem korrekten Initialzustand rendern', () => {
