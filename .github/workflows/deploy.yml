@@ -4,7 +4,10 @@ name: Deploy to GitHub Pages
 # Löst den Workflow bei jedem Push auf den 'main' oder 'Ticket#53'-Branch aus
 on:
   push:
-    branches: [ "main", "Ticket#53" ] # Füge hier alle Branches hinzu, die deployen sollen
+    branches:
+      - main
+      - 'Ticket#53'
+      #TODO: 53er entfernen# Füge hier alle Branches hinzu, die deployen sollen
   workflow_dispatch:
 
 # Erlaubt dem Skript, eine GitHub Pages-Veröffentlichung zu erstellen
