@@ -113,6 +113,9 @@ describe('useGameLogic', () => {
             playerSavedLives: 1, // Player got 1 point
             greedy: 0,           // Greedy chose bad bean (0 points)
             'epsilon-greedy': 1, // Epsilon-Greedy chose good bean (1 point)
+            random: 0,
+            thompson: 0,
+            ucb: 0
         });
     });
 
@@ -157,6 +160,9 @@ describe('useGameLogic', () => {
                 playerSavedLives: 1, // Player got 1 point
                 greedy: 0,           // Greedy chose bad bean (0 points)
                 ucb: 1,              // UCB chose good bean (1 point)
+                'epsilon-greedy': 0,
+                random: 0,
+                thompson: 0
             });
         });
 
@@ -217,6 +223,7 @@ describe('useGameLogic', () => {
                 'epsilon-greedy': 1,
                 random: 0,
                 ucb: 1,
+                thompson: 0,
             });
 
             // Alle vier Algorithmen sollten States haben
@@ -241,10 +248,13 @@ describe('useGameLogic', () => {
                 patient: 1,
                 playerSavedLives: 1,
                 greedy: 0,
+                random: 0,
+                thompson: 0,
+                ucb: 0,
+                'epsilon-greedy': 0,
             });
 
-            // UCB sollte NICHT in den Performance-Daten sein
-            expect(performance[0]).not.toHaveProperty('ucb');
+
         });
 
         it('sollte UCB mit Gaussian-Bandit korrekt verarbeiten', () => {
