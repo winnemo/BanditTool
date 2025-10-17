@@ -37,8 +37,21 @@ interface GameAreaProps {
     algorithmStates: AlgorithmState[];
     lastPlayerReward: number | null;
 }
+enum CoffeeBeans {
+    "Arabica",
+    "Robusta",
+    "Liberica",
+    "Excelsa",
+    "Typica",
+    "Bourbon",
+    "Geisha",
+    "Maragogype",
+    "Kopi Luwak",
+    "Jamaica Blue Mountain"
+}
 
-// Benutzerdefinierter Tooltip für den Graphen (aus deinem alten Projekt übernommen)
+
+// Benutzerdefinierter Tooltip für den Graphen
 const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
         return (
@@ -47,7 +60,7 @@ const CustomTooltip = ({ active, payload, label }: any) => {
                 <ul className="tooltip-list">
                     {payload.map((entry: any, index: number) => (
                         <li key={`item-${index}`} style={{ color: entry.color }}>
-                            {`${entry.name} : ${entry.value}`}
+                            {`${entry.name} : ${Math.round(entry.value * 10) / 10}`}
                         </li>
                     ))}
                 </ul>
@@ -102,6 +115,23 @@ export function GameArea({
                             Wähle eine Kaffeebohne
                         </h2>
                     </div>
+                    {isGameComplete && (
+                        <div className="game-complete-message">
+                            <Trophy className="complete-icon"/>
+                            <p>Spiel beendet! Sehr gut gemacht!</p>
+                            <p className="score-text">
+                                {config.banditType === 'bernoulli'
+                                    ? 'Dein finaler Punktestand'
+                                    : 'Deine finale Ø Bewertung'
+                                }: {
+                                config.banditType === 'bernoulli'
+                                    ? gameState.savedLives.toFixed(0)
+                                    : (gameState.savedLives / config.numIterations).toFixed(1)
+                            }
+                            </p>
+                        </div>
+                    )}
+
                     <div className="card-content">
                         <div className="beans-grid-compact">
                             {Array.from({ length: config.numActions }, (_, index) => (
@@ -112,27 +142,12 @@ export function GameArea({
                                     disabled={isGameComplete}
                                 >
                                     <Coffee className="bean-icon" />
-                                    <span className="bean-text">Bohne {index + 1}</span>
+                                    <span className="bean-text">{CoffeeBeans[index]}</span>
                                 </button>
                             ))}
                         </div>
 
-                        {isGameComplete && (
-                            <div className="game-complete-message">
-                                <Trophy className="complete-icon"/>
-                                <p>Spiel beendet! Sehr gut gemacht!</p>
-                                <p className="score-text">
-                                    {config.banditType === 'bernoulli'
-                                        ? 'Dein finaler Punktestand'
-                                        : 'Deine finale Ø Bewertung'
-                                    }: {
-                                    config.banditType === 'bernoulli'
-                                        ? gameState.savedLives.toFixed(0)
-                                        : (gameState.savedLives / config.numIterations).toFixed(1)
-                                }
-                                </p>
-                            </div>
-                        )}
+
                     </div>
                 </div>
             </div>
@@ -176,7 +191,7 @@ export function GameArea({
                                                 <div className="algo-header">
                                                     <strong
                                                         className="algo-name-tag">{formatAlgoName(state.name)}</strong>
-                                                    <span>wählt Bohne {state.choice + 1}</span>
+                                                    <span>wählt {CoffeeBeans[state.choice]} </span>
                                                 </div>
                                                 <div className="algo-outcome">
                                                     {config.banditType === 'bernoulli' ? (
