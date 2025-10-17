@@ -27,10 +27,12 @@ vi.mock('../utils/banditSimulation', () => ({
 
 vi.mock('../utils/algorithms', () => ({
     // Mock all algorithms since they all run in the background
+    // ✅ UCB wurde hinzugefügt
     algorithms: {
         greedy: vi.fn(() => 0), // Wählt immer die schlechte Bohne
         'epsilon-greedy': vi.fn(() => 1), // Wählt immer die gute Bohne
         random: vi.fn(() => 0), // Wählt immer die schlechte Bohne
+        ucb: vi.fn(() => 1), // Wählt immer die gute Bohne
     },
 }));
 
@@ -111,7 +113,9 @@ describe('useGameLogic', () => {
             playerSavedLives: 1, // Player got 1 point
             greedy: 0,           // Greedy chose bad bean (0 points)
             'epsilon-greedy': 1, // Epsilon-Greedy chose good bean (1 point)
-            random: 0,           // Random chose bad bean (0 points)
+            random: 0,
+            thompson: 0,
+            ucb: 0
         });
     });
 
@@ -132,5 +136,147 @@ describe('useGameLogic', () => {
         expect(result.current.isGameComplete).toBe(false);
         act(() => { result.current.handleDrugChoice(0); });
         expect(result.current.isGameComplete).toBe(true);
+    });
+
+    // ========================================
+    // ✅ NEUE TESTS FÜR UCB
+    // ========================================
+
+    describe('UCB-spezifische Tests', () => {
+        it('sollte UCB korrekt in die Performance-Daten aufnehmen', () => {
+            const configWithUCB = {
+                ...defaultConfig,
+                algorithms: ['greedy', 'ucb'] // UCB statt epsilon-greedy
+            };
+            const { result } = renderHook(() => useGameLogic(configWithUCB));
+
+            act(() => { result.current.startGame(); });
+            act(() => { result.current.handleDrugChoice(1); }); // Player chooses good bean
+
+            const performance = result.current.algorithmPerformance;
+            expect(performance).toHaveLength(1);
+            expect(performance[0]).toEqual({
+                patient: 1,
+                playerSavedLives: 1, // Player got 1 point
+                greedy: 0,           // Greedy chose bad bean (0 points)
+                ucb: 1,              // UCB chose good bean (1 point)
+                'epsilon-greedy': 0,
+                random: 0,
+                thompson: 0
+            });
+        });
+
+        it('sollte UCB-Algorithmus-States korrekt speichern', () => {
+            const configWithUCB = {
+                ...defaultConfig,
+                algorithms: ['ucb']
+            };
+            const { result } = renderHook(() => useGameLogic(configWithUCB));
+
+            act(() => { result.current.startGame(); });
+            act(() => { result.current.handleDrugChoice(0); });
+
+            const ucbState = result.current.algorithmStates.find(s => s.name === 'ucb');
+            expect(ucbState).toBeDefined();
+            expect(ucbState?.choice).toBe(1); // Mock returns 1
+            expect(ucbState?.reward).toBe(true); // Because index 1 is the "good" bean
+        });
+
+        it('sollte UCB-Statistiken über mehrere Runden korrekt akkumulieren', () => {
+            const configWithUCB = {
+                ...defaultConfig,
+                algorithms: ['ucb'],
+                numIterations: 3
+            };
+            const { result } = renderHook(() => useGameLogic(configWithUCB));
+
+            act(() => { result.current.startGame(); });
+
+            // Runde 1
+            act(() => { result.current.handleDrugChoice(0); });
+            // Runde 2
+            act(() => { result.current.handleDrugChoice(0); });
+            // Runde 3
+            act(() => { result.current.handleDrugChoice(1); });
+
+            // UCB hat immer index 1 gewählt (3x)
+            expect(result.current.algorithmStats.ucb?.['drug1'].attempts).toBe(3);
+            expect(result.current.algorithmStats.ucb?.['drug1'].sumOfRewards).toBe(3); // 3x erfolg
+        });
+
+        it('sollte alle vier Algorithmen gleichzeitig verarbeiten können', () => {
+            const configWithAll = {
+                ...defaultConfig,
+                algorithms: ['greedy', 'epsilon-greedy', 'random', 'ucb']
+            };
+            const { result } = renderHook(() => useGameLogic(configWithAll));
+
+            act(() => { result.current.startGame(); });
+            act(() => { result.current.handleDrugChoice(1); });
+
+            const performance = result.current.algorithmPerformance;
+            expect(performance).toHaveLength(1);
+            expect(performance[0]).toEqual({
+                patient: 1,
+                playerSavedLives: 1,
+                greedy: 0,
+                'epsilon-greedy': 1,
+                random: 0,
+                ucb: 1,
+                thompson: 0,
+            });
+
+            // Alle vier Algorithmen sollten States haben
+            expect(result.current.algorithmStates).toHaveLength(4);
+            expect(result.current.algorithmStates.map(s => s.name)).toEqual([
+                'greedy', 'epsilon-greedy', 'random', 'ucb'
+            ]);
+        });
+
+        it('sollte UCB aus Performance-Daten ausschließen, wenn nicht ausgewählt', () => {
+            const configWithoutUCB = {
+                ...defaultConfig,
+                algorithms: ['greedy'] // Nur Greedy
+            };
+            const { result } = renderHook(() => useGameLogic(configWithoutUCB));
+
+            act(() => { result.current.startGame(); });
+            act(() => { result.current.handleDrugChoice(1); });
+
+            const performance = result.current.algorithmPerformance;
+            expect(performance[0]).toEqual({
+                patient: 1,
+                playerSavedLives: 1,
+                greedy: 0,
+                random: 0,
+                thompson: 0,
+                ucb: 0,
+                'epsilon-greedy': 0,
+            });
+
+
+        });
+
+        it('sollte UCB mit Gaussian-Bandit korrekt verarbeiten', () => {
+            const gaussianConfigWithUCB = {
+                numActions: 2,
+                numIterations: 5,
+                banditType: 'gaussian' as const,
+                algorithms: ['ucb']
+            };
+            const { result } = renderHook(() => useGameLogic(gaussianConfigWithUCB));
+
+            act(() => { result.current.startGame(); });
+            act(() => { result.current.handleDrugChoice(0); }); // Player chooses index 0
+
+            // For Gaussian, rewards are numbers, not booleans
+            const ucbState = result.current.algorithmStates.find(s => s.name === 'ucb');
+            expect(ucbState?.choice).toBe(1); // Mock always returns 1
+            expect(typeof ucbState?.reward).toBe('number'); // Should be a number
+            expect(ucbState?.reward).toBe(4); // (1+1)*2 = 4 according to mock
+
+            // Player chose index 0, should get reward 2 ((0+1)*2)
+            expect(result.current.lastPlayerReward).toBe(2);
+        });
     });
 });

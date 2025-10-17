@@ -5,7 +5,7 @@ import './game.css';
 
 // Die Typen aus dem useGameLogic Hook importieren/neu definieren
 // Es ist besser, diese aus einer zentralen 'types.ts' Datei zu importieren
-type AlgorithmType = 'greedy' | 'epsilon-greedy' | 'random';
+type AlgorithmType = 'greedy' | 'epsilon-greedy' | 'random' | 'ucb' | 'thompson';
 
 interface CustomTooltipProps {
     active?: boolean;
@@ -249,10 +249,11 @@ export function GameArea({
                                 />
                                 <YAxis
                                     label={{
-                                        value: 'Kumulierte Punkte',
+                                        value: 'Kum. Punkte',
                                         angle: -90,
                                         position: 'insideLeft',
-                                        offset: -15
+                                        dy: 40
+
                                     }}
                                     domain={[0, config.numIterations]}
                                     allowDecimals={false}

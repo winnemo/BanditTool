@@ -7,7 +7,7 @@ import { useGameLogic } from './hooks/useGameLogic';
 import "./App.css";
 
 // Definieren des Typs für Algorithmen für Typsicherheit
-type AlgorithmType = "greedy" | "epsilon-greedy" | "random";
+type AlgorithmType = "greedy" | "epsilon-greedy" | "random" | "ucb" | "thompson";
 
 const App = () => {
     // 1. Zustand für die Spielkonfiguration mit initialen Werten

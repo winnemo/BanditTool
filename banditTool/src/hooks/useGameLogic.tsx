@@ -8,7 +8,7 @@ import { generateDrugProbabilities, simulateDrugOutcome, initializeDrugStats } f
 // Beschreiben die zentralen Datenstrukturen der Spiellogik.
 // ==================================================================
 
-export type AlgorithmType = 'greedy' | 'epsilon-greedy' | 'random';
+type AlgorithmType = 'greedy' | 'epsilon-greedy' | 'random' | 'ucb' | 'thompson';
 
 export interface Config {
     numActions: number;
@@ -48,7 +48,7 @@ interface PerformanceDataPoint {
 // ==================================================================
 // Implementierung
 // ==================================================================
-const ALL_ALGORITHMS: AlgorithmType[] = ['greedy', 'epsilon-greedy', 'random'];
+const ALL_ALGORITHMS: AlgorithmType[] = ['greedy', 'epsilon-greedy', 'random', 'ucb', 'thompson'];
 
 /**
  * Custom Hook, der die gesamte Logik für das Bandit-Spiel kapselt.
@@ -113,11 +113,7 @@ export const useGameLogic = (config: Config) => {
 
     /**
      * Handler für die Spieler-Aktion in jeder Runde.
-     * 1. Verarbeitet die Wahl des Spielers.
-     * 2. Simuliert die Wahl aller aktiven Algorithmen für dieselbe Runde.
-     * 3. Greift auf die `outcomes`-Matrix zu, um für alle Teilnehmer faire Ergebnisse zu gewährleisten.
-     * 4. Aktualisiert alle relevanten Statistiken und Performance-Daten.
-     * @param {number} drugIndex - Der Index der vom Spieler gewählten Bohne.
+     * KORREKTUR: Nur aktive Algorithmen werden simuliert und getrackt.
      */
     const handleDrugChoice = (drugIndex: number) => {
         if (!gameState.isPlaying || isMaxAttemptsReached || !outcomes.length) return;
@@ -134,24 +130,32 @@ export const useGameLogic = (config: Config) => {
         newDrugStats[`drug${drugIndex}`].attempts++;
         newDrugStats[`drug${drugIndex}`].sumOfRewards += numericPlayerReward;
 
-        // Algorithmen-Logik
+        // === ALGORITHMEN-LOGIK ===
+        // WICHTIG: Nur die in config.algorithms ausgewählten Algorithmen werden simuliert
         const newAlgorithmStates: AlgorithmState[] = [];
         const newOverallAlgoStats = { ...algorithmStats };
         const performanceUpdate: { [key: string]: number } = {};
 
-        ALL_ALGORITHMS.forEach((algoName: AlgorithmType) => {
+        // Iteriere nur über die AKTIVEN Algorithmen aus der Config
+        config.algorithms.forEach((algoName: AlgorithmType) => {
             const currentAlgoStats = algorithmStats[algoName];
             if (!currentAlgoStats) return;
 
-            const choice = algorithms[algoName](currentAlgoStats, config.numActions);
+            // Algorithmus trifft seine Wahl basierend auf seinen aktuellen Statistiken
+            const choice = algorithms[algoName](currentAlgoStats, {
+                numActions: config.numActions,
+                banditType: config.banditType
+            });
             const reward = outcomes[patientIndex][choice];
             const numericReward = typeof reward === 'boolean' ? (reward ? 1 : 0) : reward;
 
+            // Aktualisiere die Statistiken des Algorithmus
             const newStatsForAlgo = { ...currentAlgoStats };
             newStatsForAlgo[`drug${choice}`].attempts++;
             newStatsForAlgo[`drug${choice}`].sumOfRewards += numericReward;
             newOverallAlgoStats[algoName] = newStatsForAlgo;
 
+            // Speichere den Zustand für die UI
             newAlgorithmStates.push({ name: algoName, choice, reward });
             performanceUpdate[algoName] = numericReward;
         });
@@ -167,8 +171,10 @@ export const useGameLogic = (config: Config) => {
             const lastSaved = lastPerformancePoint[algoName] || 0;
             currentDataPoint[algoName] = lastSaved + (performanceUpdate[algoName] || 0);
         });
+
         setAlgorithmPerformance((prev) => [...prev, currentDataPoint]);
 
+        // === STATE-UPDATE ===
         setGameState({
             ...gameState,
             currentPatient: newCurrentPatient,
@@ -179,9 +185,7 @@ export const useGameLogic = (config: Config) => {
 
     /**
      * Initialisiert und startet ein neues Spiel.
-     * 1. Generiert eine neue, zufällige `outcomes`-Matrix für diese Spielsitzung.
-     * 2. Setzt alle Spielzustände über `resetGame()` zurück.
-     * 3. Setzt den `isPlaying`-Status auf `true`.
+     * Generiert eine neue outcomes-Matrix für faire Vergleiche.
      */
     const startGame = () => {
         const probs = generateDrugProbabilities(config.numActions, config.banditType);
@@ -204,7 +208,7 @@ export const useGameLogic = (config: Config) => {
     };
 
     /**
-     * Stoppt das laufende Spiel, indem `isPlaying` auf `false` gesetzt wird.
+     * Stoppt das laufende Spiel.
      */
     const stopGame = () => {
         setGameState(prevState => ({ ...prevState, isPlaying: false }));
@@ -214,7 +218,6 @@ export const useGameLogic = (config: Config) => {
     const isGameComplete = gameState.currentPatient >= config.numIterations;
 
     // === EXPORTIERTE API ===
-    // Stellt der UI alle nötigen Zustände und Handler zur Verfügung.
     return {
         gameState,
         algorithmPerformance,
