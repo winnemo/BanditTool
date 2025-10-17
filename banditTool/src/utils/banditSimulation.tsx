@@ -32,7 +32,7 @@ export const generateDrugProbabilities = (numActions : number, banditType : Band
  * @param {number} std - Die Standardabweichung der Verteilung.
  * @returns {number} Eine normalverteilte Zufallszahl.
  */
-export function getGaussianRandom(mean, std) {
+export function getGaussianRandom(mean: number, std: number) {
     let u = 0, v = 0;
     // Stellt sicher, dass u und v nicht null sind, um log(0) zu vermeiden.
     while(u === 0) u = Math.random();

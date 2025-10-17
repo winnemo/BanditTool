@@ -10,6 +10,7 @@ import { generateDrugProbabilities, simulateDrugOutcome, initializeDrugStats } f
 
 export type AlgorithmType = 'greedy' | 'epsilon-greedy' | 'random' | 'ucb' | 'thompson';
 
+
 export interface Config {
     numActions: number;
     numIterations: number;

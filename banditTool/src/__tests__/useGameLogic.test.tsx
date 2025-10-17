@@ -129,7 +129,7 @@ describe('useGameLogic', () => {
     });
 
     it('sollte erkennen, wenn das Spiel beendet ist (isGameComplete)', () => {
-        const config = { ...defaultConfig, numIterations: 1 };
+        const config : Config = { ...defaultConfig, numIterations: 1 };
         const { result } = renderHook(() => useGameLogic(config));
         act(() => { result.current.startGame(); });
 
@@ -144,7 +144,7 @@ describe('useGameLogic', () => {
 
     describe('UCB-spezifische Tests', () => {
         it('sollte UCB korrekt in die Performance-Daten aufnehmen', () => {
-            const configWithUCB = {
+            const configWithUCB : Config = {
                 ...defaultConfig,
                 algorithms: ['greedy', 'ucb'] // UCB statt epsilon-greedy
             };
@@ -167,7 +167,7 @@ describe('useGameLogic', () => {
         });
 
         it('sollte UCB-Algorithmus-States korrekt speichern', () => {
-            const configWithUCB = {
+            const configWithUCB : Config = {
                 ...defaultConfig,
                 algorithms: ['ucb']
             };
@@ -183,7 +183,7 @@ describe('useGameLogic', () => {
         });
 
         it('sollte UCB-Statistiken über mehrere Runden korrekt akkumulieren', () => {
-            const configWithUCB = {
+            const configWithUCB : Config = {
                 ...defaultConfig,
                 algorithms: ['ucb'],
                 numIterations: 3
@@ -205,7 +205,7 @@ describe('useGameLogic', () => {
         });
 
         it('sollte alle vier Algorithmen gleichzeitig verarbeiten können', () => {
-            const configWithAll = {
+            const configWithAll : Config = {
                 ...defaultConfig,
                 algorithms: ['greedy', 'epsilon-greedy', 'random', 'ucb']
             };
@@ -234,7 +234,7 @@ describe('useGameLogic', () => {
         });
 
         it('sollte UCB aus Performance-Daten ausschließen, wenn nicht ausgewählt', () => {
-            const configWithoutUCB = {
+            const configWithoutUCB : Config = {
                 ...defaultConfig,
                 algorithms: ['greedy'] // Nur Greedy
             };
@@ -258,7 +258,7 @@ describe('useGameLogic', () => {
         });
 
         it('sollte UCB mit Gaussian-Bandit korrekt verarbeiten', () => {
-            const gaussianConfigWithUCB = {
+            const gaussianConfigWithUCB : Config= {
                 numActions: 2,
                 numIterations: 5,
                 banditType: 'gaussian' as const,
