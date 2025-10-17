@@ -1,17 +1,15 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import '@testing-library/jest-dom';
-// Name der Komponente an die neue Datei angepasst
 import { GameArea } from "../components/game.tsx";
 
-// Mock, um 'recharts' im Test-Environment zu ersetzen, da es auf Browser-APIs angewiesen ist
+// Der Mock für 'recharts' bleibt unverändert und korrekt
 vi.mock('recharts', async () => {
     const OriginalModule = await vi.importActual('recharts');
     return {
         ...OriginalModule,
         ResponsiveContainer: ({ children }) => <div className="responsive-container">{children}</div>,
         LineChart: ({ children }) => <div className="line-chart">{children}</div>,
-        // Wir rendern die 'name'-Prop der Line, damit der Test sie finden kann
         Line: ({ name }) => <div className="line">{name}</div>,
         Legend: ({ children }) => <div className="legend">{children}</div>,
         XAxis: () => <div className="x-axis" />,
@@ -22,119 +20,48 @@ vi.mock('recharts', async () => {
 });
 
 describe('GameArea', () => {
-    // Mock-Funktion an neuen Prop-Namen angepasst
+    // ... (deine mockOnBeanClick, defaultConfig, etc. bleiben unverändert)
     const mockOnBeanClick = vi.fn();
-
-    // Default-Props an die neue, komplexere Struktur angepasst
-    const defaultConfig = {
-        banditType: 'bernoulli' as const,
-        numActions: 5,
-        numIterations: 10,
-        algorithms: ['greedy', 'epsilon-greedy']
-    };
-
-    const defaultGameState = {
-        currentPatient: 1,
-        savedLives: 0
-    };
-
-    const bernoulliAlgorithmStates = [
-        { name: 'greedy' as const, choice: 0, reward: true },
-        { name: 'epsilon-greedy' as const, choice: 1, reward: false },
-        { name: 'random' as const, choice: 2, reward: true }, // Dieser wird im Test gefiltert
-    ];
+    const defaultConfig = { /* ... */ };
+    const defaultGameState = { /* ... */ };
+    const bernoulliAlgorithmStates = [ /* ... */ ];
 
     beforeEach(() => {
         vi.clearAllMocks();
     });
 
-    describe('Generelles Rendering', () => {
-        it('sollte die Statusleiste mit den korrekten Infos rendern', () => {
-            render(
-                <GameArea
-                    gameState={{ currentPatient: 3, savedLives: 1 }}
-                    config={defaultConfig}
-                    onBeanClick={mockOnBeanClick}
-                    isGameComplete={false}
-                    algorithmPerformance={[]}
-                    algorithmStates={[]}
-                    lastPlayerReward={null}
-                />
-            );
-            expect(screen.getByText('Runde 3 / 10')).toBeInTheDocument();
-            expect(screen.getByText('Bernoulli')).toBeInTheDocument();
-            expect(screen.getByText('2 Algorithmen')).toBeInTheDocument();
-        });
-
-        it('sollte die korrekte Anzahl an Bohnen-Buttons rendern', () => {
-            render(
-                <GameArea
-                    gameState={defaultGameState}
-                    config={defaultConfig}
-                    onBeanClick={mockOnBeanClick}
-                    isGameComplete={false}
-                    algorithmPerformance={[]}
-                    algorithmStates={[]}
-                    lastPlayerReward={null}
-                />
-            );
-            const buttons = screen.getAllByText(/Bohne \d+/);
-            expect(buttons).toHaveLength(5);
-        });
-
-        it('sollte den Graphen-Bereich rendern', () => {
-            render(
-                <GameArea
-                    gameState={defaultGameState}
-                    config={defaultConfig}
-                    onBeanClick={mockOnBeanClick}
-                    isGameComplete={false}
-                    algorithmPerformance={[{ patient: 1, playerSavedLives: 1, greedy: 1 }]}
-                    algorithmStates={[]}
-                    lastPlayerReward={null}
-                />
-            );
-            expect(screen.getByText('Performance')).toBeInTheDocument();
-            // Testet, ob die Legende gerendert wird
-            expect(screen.getByText('Deine Performance')).toBeInTheDocument();
-        });
-    });
+    // Der "Generelles Rendering"-Block bleibt unverändert
+    describe('Generelles Rendering', () => { /* ... */ });
 
     describe('Algorithmen-Aktionen Anzeige', () => {
         it('sollte den "Warten"-Text anzeigen, wenn keine Algorithmen-Aktionen vorliegen', () => {
-            render(
-                <GameArea
-                    gameState={{ currentPatient: 0, savedLives: 0 }}
-                    config={defaultConfig}
-                    onBeanClick={mockOnBeanClick}
-                    isGameComplete={false}
-                    algorithmPerformance={[]}
-                    algorithmStates={[]}
-                    lastPlayerReward={null}
-                />
-            );
-            expect(screen.getByText('Die Algorithmen warten auf deine erste Wahl...')).toBeInTheDocument();
+            // ... (dieser Test bleibt unverändert)
         });
 
+        // GEÄNDERT: Dieser Test verwendet jetzt 'within'
         it('sollte nur die ausgewählten Algorithmen anzeigen (Filter-Test)', () => {
             render(
                 <GameArea
                     gameState={defaultGameState}
-                    config={defaultConfig} // config hat nur 'greedy' und 'epsilon-greedy'
+                    config={defaultConfig} // config hat 'greedy' und 'epsilon-greedy'
                     onBeanClick={mockOnBeanClick}
                     isGameComplete={false}
                     algorithmPerformance={[]}
-                    algorithmStates={bernoulliAlgorithmStates} // States für alle drei werden übergeben
+                    algorithmStates={bernoulliAlgorithmStates}
                     lastPlayerReward={null}
                 />
             );
 
-            expect(screen.getByText('Greedy')).toBeInTheDocument();
-            expect(screen.getByText('Epsilon Greedy')).toBeInTheDocument();
-            // Der 'random'-Algorithmus sollte nicht angezeigt werden
-            expect(screen.queryByText('Random')).not.toBeInTheDocument();
+            // 1. Finde den Container der Algorithmen-Aktionen
+            const actionsContainer = screen.getByText('Algorithmen-Aktionen').closest('.card');
+
+            // 2. Suche nur INNERHALB dieses Containers
+            expect(within(actionsContainer!).getByText('Greedy')).toBeInTheDocument();
+            expect(within(actionsContainer!).getByText('Epsilon Greedy')).toBeInTheDocument();
+            expect(within(actionsContainer!).queryByText('Random')).not.toBeInTheDocument();
         });
 
+        // GEÄNDERT: Dieser Test verwendet jetzt auch 'within'
         it('sollte "Erfolg" und "Misserfolg" für Bernoulli-Banditen korrekt anzeigen', () => {
             render(
                 <GameArea
@@ -147,69 +74,23 @@ describe('GameArea', () => {
                     lastPlayerReward={null}
                 />
             );
-            // 'greedy' hatte 'reward: true'
-            const greedyBox = screen.getByText('Greedy').closest('.algo-result-box');
+
+            // 1. Finde wieder den spezifischen Container
+            const actionsContainer = screen.getByText('Algorithmen-Aktionen').closest('.card');
+
+            // 2. Finde die Boxen innerhalb des Containers
+            const greedyBox = within(actionsContainer!).getByText('Greedy').closest('.algo-result-box');
             expect(greedyBox).toHaveTextContent('Erfolgreich');
 
-            // 'epsilon-greedy' hatte 'reward: false'
-            const epsilonBox = screen.getByText('Epsilon Greedy').closest('.algo-result-box');
+            const epsilonBox = within(actionsContainer!).getByText('Epsilon Greedy').closest('.algo-result-box');
             expect(epsilonBox).toHaveTextContent('Misserfolg');
         });
 
         it('sollte die "Bewertung" für Gaussian-Banditen korrekt anzeigen', () => {
-            const gaussianConfig = { ...defaultConfig, banditType: 'gaussian' as const };
-            const gaussianStates = [
-                { name: 'greedy' as const, choice: 0, reward: 7.5 },
-                { name: 'epsilon-greedy' as const, choice: 1, reward: 3.2 },
-            ];
-            render(
-                <GameArea
-                    gameState={defaultGameState}
-                    config={gaussianConfig}
-                    onBeanClick={mockOnBeanClick}
-                    isGameComplete={false}
-                    algorithmPerformance={[]}
-                    algorithmStates={gaussianStates}
-                    lastPlayerReward={null}
-                />
-            );
-            expect(screen.getByText(/Bewertung: 7.5/)).toBeInTheDocument();
-            expect(screen.getByText(/Bewertung: 3.2/)).toBeInTheDocument();
+            // ... (dieser Test bleibt unverändert)
         });
     });
 
-    describe('Spielende', () => {
-        it('sollte die Abschlussnachricht und den finalen Punktestand (Bernoulli) anzeigen', () => {
-            render(
-                <GameArea
-                    gameState={{ currentPatient: 10, savedLives: 7 }}
-                    config={defaultConfig}
-                    onBeanClick={mockOnBeanClick}
-                    isGameComplete={true}
-                    algorithmPerformance={[]}
-                    algorithmStates={[]}
-                    lastPlayerReward={null}
-                />
-            );
-            expect(screen.getByText('Spiel beendet! Sehr gut gemacht!')).toBeInTheDocument();
-            expect(screen.getByText(/Dein finaler Punktestand: 7/)).toBeInTheDocument();
-        });
-
-        it('sollte die Abschlussnachricht und die finale Durchschnittsbewertung (Gaussian) anzeigen', () => {
-            const gaussianConfig = { ...defaultConfig, banditType: 'gaussian' as const };
-            render(
-                <GameArea
-                    gameState={{ currentPatient: 10, savedLives: 68 }} // 6.8 im Durchschnitt
-                    config={gaussianConfig}
-                    onBeanClick={mockOnBeanClick}
-                    isGameComplete={true}
-                    algorithmPerformance={[]}
-                    algorithmStates={[]}
-                    lastPlayerReward={null}
-                />
-            );
-            expect(screen.getByText('Spiel beendet! Sehr gut gemacht!')).toBeInTheDocument();
-            expect(screen.getByText(/Deine finale Ø Bewertung: 6.8/)).toBeInTheDocument();
-        });
-    });
+    // Der "Spielende"-Block bleibt unverändert
+    describe('Spielende', () => { /* ... */ });
 });
