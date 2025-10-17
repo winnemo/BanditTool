@@ -6,8 +6,6 @@ on:
   push:
     branches:
       - main
-      - 'Ticket#53'
-      #TODO: 53er entfernen# Füge hier alle Branches hinzu, die deployen sollen
   workflow_dispatch:
 
 # Erlaubt dem Skript, eine GitHub Pages-Veröffentlichung zu erstellen
