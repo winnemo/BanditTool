@@ -1,53 +1,52 @@
+# Name des Workflows, der im "Actions"-Tab auf GitHub angezeigt wird
 name: Deploy to GitHub Pages
 
+# Löst den Workflow bei jedem Push auf den 'main' oder 'Ticket#53'-Branch aus
 on:
   push:
     branches:
       - main
       - 'Ticket#53'
+      #TODO: 53er entfernen# Füge hier alle Branches hinzu, die deployen sollen
   workflow_dispatch:
 
+# Erlaubt dem Skript, eine GitHub Pages-Veröffentlichung zu erstellen
 permissions:
   contents: read
   pages: write
   id-token: write
 
+# Definiert die einzelnen Jobs, die ausgeführt werden
 jobs:
   build-and-deploy:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-latest # Verwendet eine virtuelle Linux-Maschine
 
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v4
-
-      - name: Show current branch
-        run: echo "Running on branch: ${{ github.ref }}"
+        uses: actions/checkout@v4 # 1. Lädt deinen Code herunter
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v4 # 2. Richtet Node.js ein
         with:
-          node-version: 20
-          cache: npm
+          node-version: "20"
+          cache: 'npm'
 
       - name: Install dependencies
-        run: npm install
-        working-directory: banditTool
+        run: npm install # 3. Installiert alle Pakete
+        #working-directory: banditTool
 
       - name: Build project
-        run: npm run build
-        working-directory: banditTool
-
-      - name: Check dist folder
-        run: ls -R banditTool/dist || echo "dist folder missing!"
+        run: npm run build # 4. Baut dein Projekt
+        #working-directory: banditTool
 
       - name: Setup Pages
-        uses: actions/configure-pages@v4
+        uses: actions/configure-pages@v4 # 5. Konfiguriert GitHub Pages
 
       - name: Upload artifact
-        uses: actions/upload-pages-artifact@v3
+        uses: actions/upload-pages-artifact@v3 # 6. Lädt den fertigen 'dist'-Ordner hoch
         with:
-          path: banditTool/dist
+          path: './banditTool/dist'
 
       - name: Deploy to GitHub Pages
         id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v4 # 7. Veröffentlicht den hochgeladenen Ordner
