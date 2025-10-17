@@ -71,11 +71,14 @@ describe('algorithms', () => {
                 drug1: { attempts: 10, sumOfRewards: 9 }, // klar die beste Wahl
                 drug2: { attempts: 10, sumOfRewards: 1 }
             };
-            const numActions = 3;
+            const config = {
+                numActions: 3,
+                banditType: 'epsilon-greedy' // Der Typ ist für diesen Test nicht relevant, muss aber für die Signatur vorhanden sein.
+            };
 
             const results = new Set();
             for (let i = 0; i < 100; i++) {
-                results.add(algorithms['epsilon-greedy'](drugStats, numActions));
+                results.add(algorithms['epsilon-greedy'](drugStats, config));
             }
 
             // Mit epsilon=0.1 sollten über 100 Versuche sehr wahrscheinlich mehrere Aktionen gewählt werden

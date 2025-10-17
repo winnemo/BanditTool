@@ -41,7 +41,7 @@ interface DrugStats {
     [key: string]: DrugStat;
 }
 
-type AlgorithmFunction = (drugStats: DrugStats, config: { numActions: number; banditType: string }) => number;
+type AlgorithmFunction = (drugStats: DrugStats, config?: { numActions: number; banditType: string }) => number;
 
 /**
  * Ein Objekt, das verschiedene Algorithmen zur Lösung des Multi-Armed Bandit-Problems enthält.
@@ -70,17 +70,24 @@ export const algorithms: { [key: string]: AlgorithmFunction } = {
      * Wählt meistens die beste Aktion, aber mit 10% Wahrscheinlichkeit eine zufällige.
      */
     'epsilon-greedy': (drugStats, config) => {
+        if (!config) {
+            throw new Error("Epsilon-Greedy benötigt ein Konfigurationsobjekt.");
+        }
+
         if (Math.random() < 0.1) {
             return Math.floor(Math.random() * config.numActions);
         } else {
-            return algorithms.greedy(drugStats, config);
+            return algorithms.greedy(drugStats);
         }
     },
 
     /**
      * Wählt immer eine zufällige Aktion.
      */
-    random: (drugStats, config) => {
+    random: (_drugStats, config) => {
+        if(!config){
+            throw Error("Random benötigt Konfigurationsobjekt.")
+        }
         return Math.floor(Math.random() * config.numActions);
     },
 
@@ -129,6 +136,9 @@ export const algorithms: { [key: string]: AlgorithmFunction } = {
     },
 
     thompson: (drugStats, config) => {
+        if (!config) {
+            throw new Error("Thompson Sampling benötigt ein Konfigurationsobjekt.");
+        }
         let bestDrug = 0;
         let maxSampledValue = -Infinity;
         const drugKeys = Object.keys(drugStats);

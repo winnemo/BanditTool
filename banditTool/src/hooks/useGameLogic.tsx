@@ -8,7 +8,7 @@ import { generateDrugProbabilities, simulateDrugOutcome, initializeDrugStats } f
 // Beschreiben die zentralen Datenstrukturen der Spiellogik.
 // ==================================================================
 
-type AlgorithmType = 'greedy' | 'epsilon-greedy' | 'random' | 'ucb' | 'thompson';
+export type AlgorithmType = 'greedy' | 'epsilon-greedy' | 'random' | 'ucb' | 'thompson';
 
 export interface Config {
     numActions: number;
