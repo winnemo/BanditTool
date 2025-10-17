@@ -6,6 +6,19 @@ import './game.css';
 // Die Typen aus dem useGameLogic Hook importieren/neu definieren
 // Es ist besser, diese aus einer zentralen 'types.ts' Datei zu importieren
 type AlgorithmType = 'greedy' | 'epsilon-greedy' | 'random';
+
+interface CustomTooltipProps {
+    active?: boolean;
+    payload?: any[];
+    label?: string | number;
+}
+
+interface PayloadEntry {
+    name: string;
+    value: number;
+    color: string;
+}
+
 interface GameState {
     currentPatient: number;
     savedLives: number;
@@ -37,7 +50,8 @@ interface GameAreaProps {
     algorithmStates: AlgorithmState[];
     lastPlayerReward: number | null;
 }
-enum CoffeeBeans {
+
+const CoffeeBeans = [
     "Arabica",
     "Robusta",
     "Liberica",
@@ -48,18 +62,19 @@ enum CoffeeBeans {
     "Maragogype",
     "Kopi Luwak",
     "Jamaica Blue Mountain"
-}
+];
 
 
 // Benutzerdefinierter Tooltip für den Graphen
-const CustomTooltip = ({ active, payload, label }: any) => {
+const CustomTooltip = ({ active, payload, label }: CustomTooltipProps) => {
     if (active && payload && payload.length) {
         return (
             <div className="custom-tooltip">
                 <p className="tooltip-label">{`Runde: ${label}`}</p>
                 <ul className="tooltip-list">
-                    {payload.map((entry: any, index: number) => (
-                        <li key={`item-${index}`} style={{ color: entry.color }}>
+                    {/* Dem 'entry' im map den neuen Bauplan zuweisen */}
+                    {payload.map((entry: PayloadEntry, index: number) => (
+                        <li key={`item-${index}`} style={{color: entry.color}}>
                             {`${entry.name} : ${Math.round(entry.value * 10) / 10}`}
                         </li>
                     ))}

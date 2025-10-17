@@ -49,7 +49,7 @@ export const algorithms: { [key: string]: AlgorithmFunction } = {
     /**
      * Wählt immer eine zufällige Aktion.
      */
-    random: (drugStats, numActions = 1) => { // numActions mit Default-Wert versehen
+    random: (_drugStats, numActions = 1) => { // numActions mit Default-Wert versehen
         return Math.floor(Math.random() * numActions);
     }
 };
