@@ -1,10 +1,13 @@
+import { type DrugStats } from '../hooks/useGameLogic';
+
+type BanditType = 'bernoulli' | 'gaussian';
 /**
  * Generiert die "wahren" Erfolgsparameter für eine neue Simulation.
  * @param {number} numActions - Die Anzahl der Aktionen (Bohnen).
  * @param {string} banditType - Der Typ des Banditen ('bernoulli' oder 'gaussian').
  * @returns {Array<number|object>} Ein Array mit den Erfolgsparametern.
  */
-export const generateDrugProbabilities = (numActions, banditType) => {
+export const generateDrugProbabilities = (numActions : number, banditType : BanditType) => {
     const probs = [];
     for (let i = 0; i < numActions; i++) {
         // Für Bernoulli-Banditen: eine zufällige Erfolgswahrscheinlichkeit von 0.1 bis 0.9.
@@ -47,17 +50,21 @@ export function getGaussianRandom(mean, std) {
  * @param {string} banditType - Der Typ des Banditen.
  * @returns {boolean} True bei Erfolg, False bei Misserfolg.
  */
-export const simulateDrugOutcome = (drugIndex, drugProbabilities, banditType) => {
-    if (banditType == 'bernoulli') {
-        // Bernoulli-Versuch: Erfolg, wenn Zufallszahl kleiner als die Erfolgswahrscheinlichkeit ist.
-        return Math.random() < drugProbabilities[drugIndex];
-    } else if(banditType == 'gaussian'){
-        const{ mean, std } =drugProbabilities[drugIndex];
-        // Ziehe einen Wert aus der Normalverteilung.
+export const simulateDrugOutcome = (
+    drugIndex: number,
+    drugProbabilities: (number | { mean: number; std: number })[],
+    banditType: BanditType
+): boolean | number => {
+    if (banditType === 'bernoulli') {
+        return Math.random() < (drugProbabilities[drugIndex] as number);
+
+    } else if (banditType === 'gaussian') {
+        const { mean, std } = drugProbabilities[drugIndex] as { mean: number; std: number };
+
         const outcome = getGaussianRandom(mean, std);
-        // Erfolg ist definiert als ein Ergebnis über dem Schwellenwert 50.
         const clampedOutcome = Math.max(0, Math.min(10, outcome));
         return Math.round(clampedOutcome * 10) / 10;
+
     } else {
         throw new Error(`Unbekannter Bandit-Typ: "${banditType}"`);
     }
@@ -68,8 +75,8 @@ export const simulateDrugOutcome = (drugIndex, drugProbabilities, banditType) =>
  * @param {number} numActions - Die Anzahl der Aktionen.
  * @returns {object} Ein Objekt zur Speicherung von Versuchen und Erfolgen.
  */
-export const initializeDrugStats = (numActions) => {
-    const stats = {};
+export const initializeDrugStats = (numActions: number) => {
+    const stats: DrugStats = {};
     for (let i = 0; i < numActions; i++) {
         stats[`drug${i}`] = { attempts: 0, sumOfRewards: 0 };
     }

@@ -2,6 +2,7 @@ import { useState, useCallback } from 'react';
 import { algorithms } from '../utils/algorithms';
 import { generateDrugProbabilities, simulateDrugOutcome, initializeDrugStats } from '../utils/banditSimulation';
 
+
 // ==================================================================
 // Typ-Definitionen (Domain Models)
 // Beschreiben die zentralen Datenstrukturen der Spiellogik.
@@ -9,30 +10,30 @@ import { generateDrugProbabilities, simulateDrugOutcome, initializeDrugStats } f
 
 type AlgorithmType = 'greedy' | 'epsilon-greedy' | 'random' | 'ucb' | 'thompson';
 
-interface Config {
+export interface Config {
     numActions: number;
     numIterations: number;
     banditType: 'bernoulli' | 'gaussian';
     algorithms: AlgorithmType[];
 }
 
-interface DrugStat {
+export interface DrugStat {
     attempts: number;
     sumOfRewards: number;
 }
 
-interface DrugStats {
+export interface DrugStats {
     [key: string]: DrugStat;
 }
 
-interface GameState {
+export interface GameState {
     currentPatient: number;
     savedLives: number;
     isPlaying: boolean;
     drugStats: DrugStats;
 }
 
-interface AlgorithmState {
+export interface AlgorithmState {
     name: AlgorithmType;
     choice: number;
     reward: number | boolean | null;
@@ -120,15 +121,14 @@ export const useGameLogic = (config: Config) => {
         const patientIndex = gameState.currentPatient;
         const newCurrentPatient = gameState.currentPatient + 1;
 
-        // === SPIELER-LOGIK ===
-        const playerSuccess = outcomes[patientIndex][drugIndex];
-        const numericReward = typeof playerSuccess === 'boolean' ? (playerSuccess ? 1 : 0) : playerSuccess;
-        setLastPlayerReward(numericReward);
-        const newSavedLives = gameState.savedLives + numericReward;
-
+        // Spieler-Logik
+        const playerReward = outcomes[patientIndex][drugIndex];
+        const numericPlayerReward = typeof playerReward === 'boolean' ? (playerReward ? 1 : 0) : playerReward;
+        setLastPlayerReward(numericPlayerReward);
+        const newSavedLives = gameState.savedLives + numericPlayerReward;
         const newDrugStats = { ...gameState.drugStats };
         newDrugStats[`drug${drugIndex}`].attempts++;
-        newDrugStats[`drug${drugIndex}`].sumOfRewards += numericReward;
+        newDrugStats[`drug${drugIndex}`].sumOfRewards += numericPlayerReward;
 
         // === ALGORITHMEN-LOGIK ===
         // WICHTIG: Nur die in config.algorithms ausgewählten Algorithmen werden simuliert
@@ -147,39 +147,29 @@ export const useGameLogic = (config: Config) => {
                 banditType: config.banditType
             });
             const reward = outcomes[patientIndex][choice];
+            const numericReward = typeof reward === 'boolean' ? (reward ? 1 : 0) : reward;
 
             // Aktualisiere die Statistiken des Algorithmus
             const newStatsForAlgo = { ...currentAlgoStats };
             newStatsForAlgo[`drug${choice}`].attempts++;
-            const numericAlgoReward = typeof reward === 'boolean' ? (reward ? 1 : 0) : reward;
-            newStatsForAlgo[`drug${choice}`].sumOfRewards += numericAlgoReward;
+            newStatsForAlgo[`drug${choice}`].sumOfRewards += numericReward;
             newOverallAlgoStats[algoName] = newStatsForAlgo;
 
             // Speichere den Zustand für die UI
             newAlgorithmStates.push({ name: algoName, choice, reward });
-            performanceUpdate[algoName] = numericAlgoReward;
+            performanceUpdate[algoName] = numericReward;
         });
 
         // State-Updates
         setAlgorithmStats(newOverallAlgoStats);
         setAlgorithmStates(newAlgorithmStates);
 
-        // === PERFORMANCE-TRACKING ===
-        // KORREKTUR: Nur aktive Algorithmen werden im Performance-Chart getrackt
-        const lastPerformancePoint = algorithmPerformance.length > 0
-            ? algorithmPerformance[algorithmPerformance.length - 1]
-            : {};
-
-        const currentDataPoint: PerformanceDataPoint = {
-            patient: newCurrentPatient,
-            playerSavedLives: newSavedLives
-        };
-
-        // Iteriere nur über die aktiven Algorithmen
-        config.algorithms.forEach((algoName: AlgorithmType) => {
+        // Performance-Daten aktualisieren
+        const lastPerformancePoint: Partial<PerformanceDataPoint> = algorithmPerformance.length > 0 ? algorithmPerformance[algorithmPerformance.length - 1] : {};
+        const currentDataPoint: PerformanceDataPoint = { patient: newCurrentPatient, playerSavedLives: newSavedLives };
+        ALL_ALGORITHMS.forEach((algoName: AlgorithmType) => {
             const lastSaved = lastPerformancePoint[algoName] || 0;
-            const rewardToAdd = performanceUpdate[algoName] || 0; // Fallback auf 0
-            currentDataPoint[algoName] = lastSaved + rewardToAdd;
+            currentDataPoint[algoName] = lastSaved + (performanceUpdate[algoName] || 0);
         });
 
         setAlgorithmPerformance((prev) => [...prev, currentDataPoint]);
@@ -200,7 +190,6 @@ export const useGameLogic = (config: Config) => {
     const startGame = () => {
         const probs = generateDrugProbabilities(config.numActions, config.banditType);
         const preGeneratedOutcomes: (boolean | number)[][] = [];
-
         for (let i = 0; i < config.numIterations; i++) {
             const roundOutcomes: (boolean | number)[] = [];
             for (let j = 0; j < config.numActions; j++) {
