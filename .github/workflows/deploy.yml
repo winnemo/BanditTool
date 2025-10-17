@@ -27,13 +27,14 @@ jobs:
         with:
           node-version: "20"
           cache: 'npm'
-          # Die Action findet die 'package-lock.json' jetzt automatisch im Hauptverzeichnis.
 
       - name: Install dependencies
         run: npm install # 3. Installiert alle Pakete
+        working-directory: banditTool
 
       - name: Build project
         run: npm run build # 4. Baut dein Projekt
+        working-directory: banditTool
 
       - name: Setup Pages
         uses: actions/configure-pages@v4 # 5. Konfiguriert GitHub Pages
@@ -41,7 +42,7 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3 # 6. Lädt den fertigen 'dist'-Ordner hoch
         with:
-          path: './dist'
+          path: './banditTool/dist'
 
       - name: Deploy to GitHub Pages
         id: deployment
