@@ -5,9 +5,18 @@ import { algorithms } from '../utils/algorithms';
 vi.mock('./banditSimulation', () => ({
     getGaussianRandom: vi.fn((mean: number, stdDev: number) => mean + stdDev * 0.5)
 }));
+interface DrugStat {
+    attempts: number;
+    sumOfRewards: number;
+}
+
+interface DrugStats {
+    [key: string]: DrugStat;
+}
 
 describe('Bandit Algorithms', () => {
-    let mockDrugStats: any;
+    //@typescript-eslint/ no-explicit-any
+    let mockDrugStats: DrugStats;
 
     beforeEach(() => {
         mockDrugStats = {
@@ -141,16 +150,6 @@ describe('Bandit Algorithms', () => {
             expect(() => algorithms.thompson(mockDrugStats)).toThrow();
         });
 
-        it('sollte ungetestete Aktionen priorisieren', () => {
-            const statsWithUntested = {
-                drug0: { attempts: 10, sumOfRewards: 8 },
-                drug1: { attempts: 0, sumOfRewards: 0 },
-                drug2: { attempts: 5, sumOfRewards: 4 },
-            };
-            const config = { numActions: 3, banditType: 'bernoulli' };
-            const result = algorithms.thompson(statsWithUntested, config);
-            expect(result).toBe(1);
-        });
 
         it('sollte für Bernoulli-Banditen funktionieren', () => {
             const config = { numActions: 3, banditType: 'bernoulli' };

@@ -1,6 +1,8 @@
-import { Coffee, TrendingUp, Trophy, Check, X } from 'lucide-react';
+import { Coffee, TrendingUp, Trophy, Check, X, Info } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { PLAYER_COLOR, ALGORITHM_COLORS } from '../utils/styleConstants';
+import { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import './game.css';
 
 // Die Typen aus dem useGameLogic Hook importieren/neu definieren
@@ -41,6 +43,187 @@ interface AlgorithmState {
     reward: number | boolean | null;
 }
 
+interface AlgorithmPopoverProps {
+    isOpen: boolean;
+    onClose: () => void;
+    title: string;
+    description: string;
+    pseudocode: string;
+    complexity: string;
+}
+
+// Statische AlgorithmInfo-Daten (angepasst an deine AlgorithmType-Keys)
+const algorithmInfo: Record<AlgorithmType, { description: string; pseudocode: string; complexity: string }> = {
+    'greedy': {
+        description: 'Dieser Algorithmus wählt immer die Aktion (Bohne), die den höchsten bekannten Durchschnittswert hat. Um zu verhindern, dass er bei einer Aktion hängen bleibt, die in der ersten Runde eine 0 zurückgibt, wird ungetesteten Aktionen ein optimistischer Startwert von 0.5 zugewiesen.',
+        pseudocode: `FUNKTION Greedy(Statistiken):
+  Setze bestes_ergebnis = -UNENDLICH
+  Setze beste_aktion = NULL
+
+  FÜR jede Aktion i:
+    WENN Aktion_i_versuche == 0:
+      // Optimistischer Startwert
+      Setze ergebnis = 0.5  
+    SONST:
+      // Normaler Durchschnitt
+      Setze ergebnis = Aktion_i_belohnungssumme / Aktion_i_versuche
+    
+    WENN ergebnis > bestes_ergebnis:
+      Setze bestes_ergebnis = ergebnis
+      Setze beste_aktion = i
+
+  RÜCKGABE beste_aktion`,
+        complexity: 'Zeit: O(n), Speicher: O(k) wobei k = Anzahl Arme'
+    },
+    'epsilon-greedy': {
+        description: 'Dieser Algorithmus ist eine Erweiterung des "Greedy"-Algorithmus. In 90 % der Fälle wählt er die beste bekannte Aktion (Exploitation). In 10 % der Fälle wählt er jedoch eine komplett zufällige Aktion (Exploration), um potenziell bessere, noch unentdeckte Aktionen zu finden.',
+        pseudocode: `FUNKTION Epsilon-Greedy(Statistiken):
+  Setze zufallszahl = ZUFALL(0, 1)
+
+  WENN zufallszahl < 0.1: 
+    // 10% Exploration
+    RÜCKGABE ZUFÄLLIGE_AKTION()
+  SONST: 
+    // 90% Exploitation
+    RÜCKGABE Greedy(Statistiken) // Ruft die Greedy-Funktion auf`,
+        complexity: 'Zeit: O(n), Speicher: O(k)'
+    },
+    'ucb': {
+        description: 'UCB balanciert Gier (Exploitation) und Neugier (Exploration) auf clevere Weise. Er wählt die Aktion mit dem höchsten "Potenzial". Dieses Potenzial berechnet sich aus dem bisherigen Durchschnitt (Gier) plus einem "Unsicherheits-Bonus" (Neugier). Aktionen, die selten probiert wurden, erhalten einen hohen Bonus und werden so zur Exploration ausgewählt.',
+        pseudocode: `FUNKTION UCB(Statistiken):
+  Setze gesamtversuche = Summe aller Versuche
+  
+  // Verhindert log(0) in der allerersten Runde
+  WENN gesamtversuche == 0:
+    RÜCKGABE ZUFÄLLIGE_AKTION()
+
+  Setze bestes_ucb = -UNENDLICH
+  Setze beste_aktion = NULL
+
+  FÜR jede Aktion i:
+    // Spezielle Behandlung für ungetestete Aktionen
+    WENN Aktion_i_versuche == 0:
+      Setze n_pull = 1 // Behandle wie 1 Versuch
+      Setze avg_belohnung = 0
+    SONST:
+      Setze n_pull = Aktion_i_versuche
+      Setze avg_belohnung = Aktion_i_belohnungssumme / n_pull
+
+    // Der "Explorations-Bonus" (Unsicherheit)
+    Setze bonus = WURZEL( (2 * LOG(gesamtversuche)) / n_pull )
+    Setze ucb_wert = avg_belohnung + bonus
+
+    WENN ucb_wert > bestes_ucb:
+      Setze bestes_ucb = ucb_wert
+      Setze beste_aktion = i
+            
+  RÜCKGABE beste_aktion`,
+        complexity: 'Zeit: O(k·n), Speicher: O(k)'
+    },
+    'thompson': {
+        description: 'Ein probabilistischer (Bayesianischer) Algorithmus. Statt nur einen Durchschnittswert zu speichern, pflegt er eine ganze Wahrscheinlichkeitsverteilung für den "wahren" Wert jeder Aktion. In jeder Runde zieht er eine Zufallsstichprobe aus der Verteilung jeder Aktion und wählt die Aktion, deren Stichprobe am höchsten war.',
+        pseudocode: `FUNKTION Thompson(Statistiken, Bandit-Typ):
+  Setze max_stichprobe = -UNENDLICH
+  Setze beste_aktion = NULL
+
+  FÜR jede Aktion i:
+    WENN Bandit-Typ == "bernoulli":
+      // Modelliert Belohnung als Wahrscheinlichkeit (0 bis 1)
+      Setze erfolge = Aktion_i_belohnungssumme
+      Setze misserfolge = Aktion_i_versuche - erfolge
+      // Nutzt Beta-Verteilung (mit Prior von 1 Erfolg, 1 Misserfolg)
+      Setze stichprobe = ZUFALLSSTICHPROBE_BETA(erfolge + 1, misserfolge + 1)
+      
+    SONST: // "gaussian"
+      // Modelliert Belohnung als Mittelwert (z.B. 0 bis 10)
+      WENN Aktion_i_versuche == 0:
+        // Prior-Annahme: Mittelwert 0, hohe Unsicherheit (stdAbw 1)
+        Setze mittelwert = 0
+        Setze std_abweichung = 1
+      SONST:
+        Setze mittelwert = Aktion_i_belohnungssumme / Aktion_i_versuche
+        Setze std_abweichung = 1 / WURZEL(Aktion_i_versuche) // Unsicherheit nimmt ab
+      
+      // Nutzt Gauß-Verteilung (Normalverteilung)
+      Setze stichprobe = ZUFALLSSTICHPROBE_GAUSS(mittelwert, std_abweichung)
+
+    WENN stichprobe > max_stichprobe:
+      Setze max_stichprobe = stichprobe
+      Setze beste_aktion = i
+
+  RÜCKGABE beste_aktion`,
+        complexity: 'Zeit: O(k·n), Speicher: O(k)'
+    },
+    'random': {
+        description: 'Dieser Algorithmus dient als Basislinie (Baseline). Er ignoriert alle gesammelten Daten (Statistiken) und wählt in jeder einzelnen Runde eine komplett zufällige Aktion.',
+        pseudocode: `FUNKTION Random(Statistiken):
+  // Ignoriere Statistiken
+  RÜCKGABE ZUFÄLLIGE_AKTION()`,
+        complexity: 'Zeit: O(n), Speicher: O(1)'
+    }
+};
+
+function AlgorithmPopover({ isOpen, onClose, title, description, pseudocode, complexity }: AlgorithmPopoverProps) {
+    useEffect(() => {
+        if (isOpen) {
+            // Prevent body scroll when popover is open
+            document.body.style.overflow = 'hidden';
+
+            // Close on ESC key
+            const handleEsc = (e: KeyboardEvent) => {
+                if (e.key === 'Escape') {
+                    onClose();
+                }
+            };
+            document.addEventListener('keydown', handleEsc);
+
+            return () => {
+                document.body.style.overflow = '';
+                document.removeEventListener('keydown', handleEsc);
+            };
+        }
+    }, [isOpen, onClose]);
+
+    if (!isOpen) return null;
+
+    return createPortal(
+        <div className="algo-popover-overlay" onClick={onClose}>
+            <div className="algo-popover-modal" onClick={(e) => e.stopPropagation()}>
+                <div className="algo-popover-header-section">
+                    <h4 className="algo-popover-title">{title}</h4>
+                    <button
+                        className="algo-popover-close-btn"
+                        onClick={onClose}
+                        aria-label="Schließen"
+                    >
+                        <X size={20} />
+                    </button>
+                </div>
+
+                <div className="algo-popover-body">
+                    <div className="algo-popover-section">
+                        <h5 className="algo-popover-subtitle">Beschreibung</h5>
+                        <p className="algo-popover-text">{description}</p>
+                    </div>
+
+                    <div className="algo-popover-section">
+                        <h5 className="algo-popover-subtitle">Pseudocode</h5>
+                        <pre className="algo-popover-code">
+              <code>{pseudocode}</code>
+            </pre>
+                    </div>
+
+                    <div className="algo-popover-section">
+                        <h5 className="algo-popover-subtitle">Komplexität</h5>
+                        <p className="algo-popover-complexity">{complexity}</p>
+                    </div>
+                </div>
+            </div>
+        </div>,
+        document.body
+    );
+}
+
 interface GameAreaProps {
     gameState: GameState;
     config: Config;
@@ -63,6 +246,8 @@ const CoffeeBeans = [
     "Kopi Luwak",
     "Jamaica Blue Mountain"
 ];
+
+
 
 
 // Benutzerdefinierter Tooltip für den Graphen
@@ -105,6 +290,8 @@ export function GameArea({
 
     // Prüfen, ob die Algorithmen bereits eine Wahl getroffen haben in dieser Runde
     const hasAlgoResults = gameState.currentPatient > 0 && algorithmStates.length > 0 && algorithmStates[0].choice !== -1;
+
+    const [openAlgorithm, setOpenAlgorithm] = useState<AlgorithmType | null>(null);
 
     return (
         <div className="game-area-container">
@@ -259,14 +446,34 @@ export function GameArea({
                                         const colorIndex = config.algorithms.indexOf(state.name);
                                         const color = ALGORITHM_COLORS[colorIndex % ALGORITHM_COLORS.length];
 
+                                        // Sicherstellen, dass Info vorhanden ist
+                                        const info = algorithmInfo[state.name] || {
+                                            description: "Keine Information verfügbar.",
+                                            pseudocode: "N/A",
+                                            complexity: "N/A"
+                                        };
+
                                         return (
                                             <div key={state.name} className="algo-result-box"
                                                  style={{borderColor: color, color: color}}>
+
+                                                {/* --- START: MODIFIZIERTER HEADER --- */}
                                                 <div className="algo-header">
-                                                    <strong
-                                                        className="algo-name-tag">{formatAlgoName(state.name)}</strong>
+                                                    {/* Wrapper für Name + Info-Button */}
+                                                    <div className="algorithm-action-name-wrapper">
+                                                        <strong className="algo-name-tag">{formatAlgoName(state.name)}</strong>
+                                                        <button
+                                                            className="algorithm-info-button"
+                                                            aria-label={`Information über ${state.name}`}
+                                                            onClick={() => setOpenAlgorithm(state.name)}
+                                                        >
+                                                            <Info className="algorithm-info-icon" />
+                                                        </button>
+                                                    </div>
                                                     <span>wählt {CoffeeBeans[state.choice]} </span>
                                                 </div>
+                                                {/* --- ENDE: MODIFIZIERTER HEADER --- */}
+
                                                 <div className="algo-outcome">
                                                     {config.banditType === 'bernoulli' ? (
                                                         //Bernoulli
@@ -280,6 +487,18 @@ export function GameArea({
                                                         <strong>Bewertung: {typeof state.reward === 'number' ? state.reward.toFixed(1) : 'N/A'}</strong>
                                                     )}
                                                 </div>
+
+                                                {/* --- START: HINZUGEFÜGTER POPOVER-AUFRUF --- */}
+                                                <AlgorithmPopover
+                                                    isOpen={openAlgorithm === state.name}
+                                                    onClose={() => setOpenAlgorithm(null)}
+                                                    title={formatAlgoName(state.name)}
+                                                    description={info.description}
+                                                    pseudocode={info.pseudocode}
+                                                    complexity={info.complexity}
+                                                />
+                                                {/* --- ENDE: HINZUGEFÜGTER POPOVER-AUFRUF --- */}
+
                                             </div>
                                         );
                                     })}

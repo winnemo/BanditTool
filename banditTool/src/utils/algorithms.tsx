@@ -52,17 +52,22 @@ export const algorithms: { [key: string]: AlgorithmFunction } = {
      */
     greedy: (drugStats) => {
         let bestDrug = 0;
-        let bestAverageReward = -1;
+        let bestAverageReward = -Infinity;
 
         Object.keys(drugStats).forEach((drugKey, index) => {
             const stats = drugStats[drugKey];
-            const averageReward = stats.attempts > 0 ? stats.sumOfRewards / stats.attempts : 0;
+
+            // Logik von Algorithm 1: Optimistischer Startwert
+            const averageReward = stats.attempts > 0
+                ? (stats.sumOfRewards / stats.attempts)
+                : 0.5;
 
             if (averageReward > bestAverageReward) {
                 bestAverageReward = averageReward;
                 bestDrug = index;
             }
         });
+
         return bestDrug;
     },
 
@@ -96,34 +101,28 @@ export const algorithms: { [key: string]: AlgorithmFunction } = {
      * Wählt die Aktion mit dem höchsten UCB-Wert: Durchschnittsreward + sqrt(2 * ln(Gesamtversuche) / Versuche_dieser_Aktion)
      */
     ucb: (drugStats) => {
-        // Gesamtanzahl aller Versuche berechnen
         const totalAttempts = Object.values(drugStats).reduce(
             (sum, stats) => sum + stats.attempts,
             0
         );
 
-        // Falls noch nicht alle Aktionen mindestens einmal versucht wurden, wähle eine ungetestete
-        const untestedActions: number[] = [];
-        Object.keys(drugStats).forEach((drugKey, index) => {
-            if (drugStats[drugKey].attempts === 0) {
-                untestedActions.push(index);
-            }
-        });
-
-        if (untestedActions.length > 0) {
-            return untestedActions[Math.floor(Math.random() * untestedActions.length)];
+        // Edge Case: Verhindert log(0) im allerersten Zug
+        if (totalAttempts === 0) {
+            const numActions = Object.keys(drugStats).length;
+            return Math.floor(Math.random() * numActions);
         }
 
-        // UCB-Wert für jede Aktion berechnen
         let bestDrug = 0;
         let bestUCB = -Infinity;
 
         Object.keys(drugStats).forEach((drugKey, index) => {
             const stats = drugStats[drugKey];
-            const averageReward = stats.sumOfRewards / stats.attempts;
 
-            // UCB-Formel: μ + sqrt(2 * ln(N) / n)
-            const explorationBonus = Math.sqrt((2 * Math.log(totalAttempts)) / stats.attempts);
+            const n_pull = stats.attempts === 0 ? 1 : stats.attempts;
+            const averageReward = stats.attempts === 0 ? 0 : (stats.sumOfRewards / stats.attempts);
+
+            // UCB1-Formel (entspricht p_hat + sqrt(log(timestep) / n_pull))
+            const explorationBonus = Math.sqrt((2 * Math.log(totalAttempts)) / n_pull);
             const ucbValue = averageReward + explorationBonus;
 
             if (ucbValue > bestUCB) {
@@ -146,30 +145,31 @@ export const algorithms: { [key: string]: AlgorithmFunction } = {
         for (let i = 0; i < drugKeys.length; i++) {
             const key = drugKeys[i];
             const stats = drugStats[key];
-
-            // Wenn eine Option noch nie probiert wurde, wähle sie, um Daten zu sammeln.
-            if (stats.attempts === 0) {
-                return i;
-            }
-
             let sampledValue: number;
 
+            // Logik von Algorithm 4: Reines Sampling aus dem Posterior
             if (config.banditType === 'bernoulli') {
                 const successes = stats.sumOfRewards;
                 const failures = stats.attempts - successes;
 
-                // Parameter für die Beta-Verteilung (Prior: 1 Erfolg, 1 Misserfolg)
+                // Prior ist (1, 1). Wenn attempts=0, wird aus Beta(1, 1) gesampelt.
                 const alpha = successes + 1;
                 const beta = failures + 1;
-
                 sampledValue = betaSample(alpha, beta);
 
             } else { // 'gaussian'
-                const mean = stats.sumOfRewards / stats.attempts;
-                // Die Unsicherheit (Standardabweichung) nimmt mit der Anzahl der Versuche ab.
-                // Ein einfacher Ansatz ist 1 / sqrt(Anzahl der Versuche).
-                const stdDev = 1 / Math.sqrt(stats.attempts);
+                // Angepasste Logik für Gaussian mit Prior
+                let mean: number;
+                let stdDev: number;
 
+                if (stats.attempts === 0) {
+                    // Prior-Annahme: Mittelwert 0, hohe Unsicherheit
+                    mean = 0;
+                    stdDev = 1;
+                } else {
+                    mean = stats.sumOfRewards / stats.attempts;
+                    stdDev = 1 / Math.sqrt(stats.attempts);
+                }
                 sampledValue = getGaussianRandom(mean, stdDev);
             }
 
