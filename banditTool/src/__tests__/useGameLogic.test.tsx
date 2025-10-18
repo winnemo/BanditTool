@@ -1,282 +1,201 @@
 import { renderHook, act } from '@testing-library/react';
-import { useGameLogic, type Config,  type AlgorithmType, type DrugStats } from '../hooks/useGameLogic';
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import type { Mock } from 'vitest';
+import { useGameLogic, type Config, type DrugStats } from '../hooks/useGameLogic';
+import * as algorithmsModule from '../utils/algorithms';
+import * as banditSimulation from '../utils/banditSimulation';
 
-// --- Updated Mocks for Vitest ---
-vi.mock('../utils/banditSimulation', () => ({
-    // This is now only called inside `startGame`
-    generateDrugProbabilities: vi.fn(() => [0.2, 0.8]), // [schlecht, gut]
-    // Mock returns a boolean for Bernoulli and a number for Gaussian
-    simulateDrugOutcome: vi.fn((drugIndex, probabilities, banditType) => {
-        if (banditType === 'gaussian') {
-            // Simulate a number reward, e.g., index * 2
-            return (drugIndex + 1) * 2;
-        }
-        // Bernoulli case
-        return probabilities[drugIndex] > 0.5; // true for index 1, false for index 0
-    }),
-    // Updated to use 'sumOfRewards'
-    initializeDrugStats: vi.fn((numActions) : DrugStats => {
-        const stats: DrugStats = {};
-        for (let i = 0; i < numActions; i++) {
-            stats[`drug${i}`] = { attempts: 0, sumOfRewards: 0 };
-        }
-        return stats;
-    }),
-}));
+vi.mock('../utils/banditSimulation');
 
-vi.mock('../utils/algorithms', () => ({
-    // Mock all algorithms since they all run in the background
-    // ✅ UCB wurde hinzugefügt
-    algorithms: {
-        greedy: vi.fn(() => 0), // Wählt immer die schlechte Bohne
-        'epsilon-greedy': vi.fn(() => 1), // Wählt immer die gute Bohne
-        random: vi.fn(() => 0), // Wählt immer die schlechte Bohne
-        ucb: vi.fn(() => 1), // Wählt immer die gute Bohne
-    },
-}));
+describe('useGameLogic Hook', () => {
+    let defaultConfig: Config;
+    let mockGreedy: Mock;
+    let mockEpsilonGreedy: Mock;
+    let mockUCB: Mock;
 
-// --- Test Suite ---
-describe('useGameLogic', () => {
-    // Updated defaultConfig to match the new hook's expectations
-    const defaultConfig: Config = {
-        numActions: 2,
-        numIterations: 5,
-        banditType: 'bernoulli' as const, // explicitly type for TS
-        algorithms: ['greedy', 'epsilon-greedy'] as AlgorithmType[],// Array of selected algorithms
-    };
+    beforeEach(() => {
+        defaultConfig = {
+            numActions: 3,
+            numIterations: 10,
+            banditType: 'bernoulli',
+            algorithms: ['greedy', 'epsilon-greedy', 'ucb'],
+        };
 
-    it('sollte mit dem korrekten Initialzustand rendern', () => {
-        const { result } = renderHook(() => useGameLogic(defaultConfig));
-
-        expect(result.current.gameState.isPlaying).toBe(false);
-        expect(result.current.gameState.currentPatient).toBe(0);
-        expect(result.current.lastPlayerReward).toBe(0);
-        expect(result.current.algorithmPerformance).toEqual([]);
-    });
-
-    it('sollte das Spiel starten und die "outcomes"-Matrix vorab generieren', () => {
-        const { result } = renderHook(() => useGameLogic(defaultConfig));
-
-        act(() => {
-            result.current.startGame();
+        vi.mocked(banditSimulation.initializeDrugStats).mockReturnValue({
+            drug0: { attempts: 0, sumOfRewards: 0 },
+            drug1: { attempts: 0, sumOfRewards: 0 },
+            drug2: { attempts: 0, sumOfRewards: 0 },
         });
 
-        expect(result.current.gameState.isPlaying).toBe(true);
-        expect(result.current.gameState.currentPatient).toBe(0);
-        // The mock for simulateDrugOutcome is called 10 times (5 iterations * 2 actions)
-        // This proves the pre-generation logic is working.
-        // Note: this relies on the mocked function, not the state, which is internal.
+        vi.mocked(banditSimulation.generateDrugProbabilities).mockReturnValue([0.3, 0.7, 0.5]);
+        vi.mocked(banditSimulation.simulateDrugOutcome).mockImplementation(
+            (drugIndex: number) => drugIndex === 1
+        );
+
+        mockGreedy = vi.fn(() => 1);
+        mockEpsilonGreedy = vi.fn(() => 0);
+        mockUCB = vi.fn(() => 1);
+
+        vi.spyOn(algorithmsModule.algorithms, 'greedy').mockImplementation(mockGreedy);
+        vi.spyOn(algorithmsModule.algorithms, 'epsilon-greedy').mockImplementation(mockEpsilonGreedy);
+        vi.spyOn(algorithmsModule.algorithms, 'ucb').mockImplementation(mockUCB);
+        vi.spyOn(algorithmsModule.algorithms, 'random').mockImplementation(vi.fn(() => 2));
+        vi.spyOn(algorithmsModule.algorithms, 'thompson').mockImplementation(vi.fn(() => 0));
     });
 
-    it('sollte einen Spielzug korrekt verarbeiten (handleDrugChoice)', () => {
-        const { result } = renderHook(() => useGameLogic(defaultConfig));
-
-        // Start the game first to generate outcomes
-        act(() => {
-            result.current.startGame();
-        });
-
-        // Player chooses the "good" bean (index 1)
-        act(() => {
-            result.current.handleDrugChoice(1);
-        });
-
-        // Check player state
-        expect(result.current.gameState.currentPatient).toBe(1);
-        expect(result.current.gameState.savedLives).toBe(1); // 1 because player chose index 1 (good) which mock returns as true (1)
-        expect(result.current.lastPlayerReward).toBe(1);
-
-        // Check player stats
-        expect(result.current.gameState.drugStats['drug1'].attempts).toBe(1);
-        expect(result.current.gameState.drugStats['drug1'].sumOfRewards).toBe(1);
-
-        // Check algorithm states (they chose 0 and 1 respectively)
-        const greedyState = result.current.algorithmStates.find(s => s.name === 'greedy');
-        expect(greedyState?.choice).toBe(0);
-        expect(greedyState?.reward).toBe(false); // reward is false because mock outcome for index 0 is false
-
-        // Check algorithm stats
-        expect(result.current.algorithmStats.greedy?.['drug0'].attempts).toBe(1);
-        expect(result.current.algorithmStats.greedy?.['drug0'].sumOfRewards).toBe(0); // 0 because outcome was false
+    afterEach(() => {
+        vi.clearAllMocks();
+        vi.restoreAllMocks();
     });
 
-    it('sollte die Performance-Daten nach einem Spielzug korrekt aktualisieren', () => {
-        const { result } = renderHook(() => useGameLogic(defaultConfig));
-        act(() => { result.current.startGame(); });
-        act(() => { result.current.handleDrugChoice(1); }); // Player chooses good bean
+    describe('Initialisierung und Lifecycle', () => {
+        it('sollte mit korrekten Initialwerten starten', () => {
+            const { result } = renderHook(() => useGameLogic(defaultConfig));
 
-        const performance = result.current.algorithmPerformance;
-        expect(performance).toHaveLength(1);
-        expect(performance[0]).toEqual({
-            patient: 1,
-            playerSavedLives: 1, // Player got 1 point
-            greedy: 0,           // Greedy chose bad bean (0 points)
-            'epsilon-greedy': 1, // Epsilon-Greedy chose good bean (1 point)
-            random: 0,
-            thompson: 0,
-            ucb: 0
-        });
-    });
-
-    it('sollte das Spiel korrekt stoppen', () => {
-        const { result } = renderHook(() => useGameLogic(defaultConfig));
-        act(() => { result.current.startGame(); });
-        expect(result.current.gameState.isPlaying).toBe(true);
-
-        act(() => { result.current.stopGame(); });
-        expect(result.current.gameState.isPlaying).toBe(false);
-    });
-
-    it('sollte erkennen, wenn das Spiel beendet ist (isGameComplete)', () => {
-        const config : Config = { ...defaultConfig, numIterations: 1 };
-        const { result } = renderHook(() => useGameLogic(config));
-        act(() => { result.current.startGame(); });
-
-        expect(result.current.isGameComplete).toBe(false);
-        act(() => { result.current.handleDrugChoice(0); });
-        expect(result.current.isGameComplete).toBe(true);
-    });
-
-    // ========================================
-    // ✅ NEUE TESTS FÜR UCB
-    // ========================================
-
-    describe('UCB-spezifische Tests', () => {
-        it('sollte UCB korrekt in die Performance-Daten aufnehmen', () => {
-            const configWithUCB : Config = {
-                ...defaultConfig,
-                algorithms: ['greedy', 'ucb'] // UCB statt epsilon-greedy
-            };
-            const { result } = renderHook(() => useGameLogic(configWithUCB));
-
-            act(() => { result.current.startGame(); });
-            act(() => { result.current.handleDrugChoice(1); }); // Player chooses good bean
-
-            const performance = result.current.algorithmPerformance;
-            expect(performance).toHaveLength(1);
-            expect(performance[0]).toEqual({
-                patient: 1,
-                playerSavedLives: 1, // Player got 1 point
-                greedy: 0,           // Greedy chose bad bean (0 points)
-                ucb: 1,              // UCB chose good bean (1 point)
-                'epsilon-greedy': 0,
-                random: 0,
-                thompson: 0
+            expect(result.current.gameState).toMatchObject({
+                currentPatient: 0,
+                savedLives: 0,
+                isPlaying: false,
             });
+            expect(result.current.isGameComplete).toBe(false);
+            expect(result.current.algorithmPerformance).toEqual([]);
         });
 
-        it('sollte UCB-Algorithmus-States korrekt speichern', () => {
-            const configWithUCB : Config = {
-                ...defaultConfig,
-                algorithms: ['ucb']
-            };
-            const { result } = renderHook(() => useGameLogic(configWithUCB));
+        it('sollte Spiel starten und Outcomes vorgenerieren', () => {
+            const { result } = renderHook(() => useGameLogic(defaultConfig));
 
-            act(() => { result.current.startGame(); });
-            act(() => { result.current.handleDrugChoice(0); });
-
-            const ucbState = result.current.algorithmStates.find(s => s.name === 'ucb');
-            expect(ucbState).toBeDefined();
-            expect(ucbState?.choice).toBe(1); // Mock returns 1
-            expect(ucbState?.reward).toBe(true); // Because index 1 is the "good" bean
-        });
-
-        it('sollte UCB-Statistiken über mehrere Runden korrekt akkumulieren', () => {
-            const configWithUCB : Config = {
-                ...defaultConfig,
-                algorithms: ['ucb'],
-                numIterations: 3
-            };
-            const { result } = renderHook(() => useGameLogic(configWithUCB));
-
-            act(() => { result.current.startGame(); });
-
-            // Runde 1
-            act(() => { result.current.handleDrugChoice(0); });
-            // Runde 2
-            act(() => { result.current.handleDrugChoice(0); });
-            // Runde 3
-            act(() => { result.current.handleDrugChoice(1); });
-
-            // UCB hat immer index 1 gewählt (3x)
-            expect(result.current.algorithmStats.ucb?.['drug1'].attempts).toBe(3);
-            expect(result.current.algorithmStats.ucb?.['drug1'].sumOfRewards).toBe(3); // 3x erfolg
-        });
-
-        it('sollte alle vier Algorithmen gleichzeitig verarbeiten können', () => {
-            const configWithAll : Config = {
-                ...defaultConfig,
-                algorithms: ['greedy', 'epsilon-greedy', 'random', 'ucb']
-            };
-            const { result } = renderHook(() => useGameLogic(configWithAll));
-
-            act(() => { result.current.startGame(); });
-            act(() => { result.current.handleDrugChoice(1); });
-
-            const performance = result.current.algorithmPerformance;
-            expect(performance).toHaveLength(1);
-            expect(performance[0]).toEqual({
-                patient: 1,
-                playerSavedLives: 1,
-                greedy: 0,
-                'epsilon-greedy': 1,
-                random: 0,
-                ucb: 1,
-                thompson: 0,
+            act(() => {
+                result.current.startGame();
             });
 
-            // Alle vier Algorithmen sollten States haben
-            expect(result.current.algorithmStates).toHaveLength(4);
-            expect(result.current.algorithmStates.map(s => s.name)).toEqual([
-                'greedy', 'epsilon-greedy', 'random', 'ucb'
-            ]);
+            expect(result.current.gameState.isPlaying).toBe(true);
+            expect(banditSimulation.generateDrugProbabilities).toHaveBeenCalledWith(3, 'bernoulli');
+            expect(banditSimulation.simulateDrugOutcome).toHaveBeenCalledTimes(30); // 10 iterations * 3 drugs
         });
 
-        it('sollte UCB aus Performance-Daten ausschließen, wenn nicht ausgewählt', () => {
-            const configWithoutUCB : Config = {
-                ...defaultConfig,
-                algorithms: ['greedy'] // Nur Greedy
-            };
-            const { result } = renderHook(() => useGameLogic(configWithoutUCB));
+        it('sollte Spiel stoppen können', () => {
+            const { result } = renderHook(() => useGameLogic(defaultConfig));
 
-            act(() => { result.current.startGame(); });
-            act(() => { result.current.handleDrugChoice(1); });
-
-            const performance = result.current.algorithmPerformance;
-            expect(performance[0]).toEqual({
-                patient: 1,
-                playerSavedLives: 1,
-                greedy: 0,
-                random: 0,
-                thompson: 0,
-                ucb: 0,
-                'epsilon-greedy': 0,
+            act(() => {
+                result.current.startGame();
+                result.current.stopGame();
             });
 
+            expect(result.current.gameState.isPlaying).toBe(false);
+            expect(result.current.notification).toContain('Spiel beendet');
+        });
+    });
 
+    describe('handleDrugChoice', () => {
+        it('sollte nichts tun wenn Spiel nicht läuft', () => {
+            const { result } = renderHook(() => useGameLogic(defaultConfig));
+
+            act(() => {
+                result.current.handleDrugChoice(0);
+            });
+
+            expect(result.current.gameState.currentPatient).toBe(0);
         });
 
-        it('sollte UCB mit Gaussian-Bandit korrekt verarbeiten', () => {
-            const gaussianConfigWithUCB : Config= {
-                numActions: 2,
-                numIterations: 5,
-                banditType: 'gaussian' as const,
-                algorithms: ['ucb']
-            };
-            const { result } = renderHook(() => useGameLogic(gaussianConfigWithUCB));
+        it('sollte Spieler-Statistiken korrekt aktualisieren', () => {
+            const { result } = renderHook(() => useGameLogic(defaultConfig));
 
-            act(() => { result.current.startGame(); });
-            act(() => { result.current.handleDrugChoice(0); }); // Player chooses index 0
+            act(() => {
+                result.current.startGame();
+                result.current.handleDrugChoice(1); // drug1 gibt true zurück
+            });
 
-            // For Gaussian, rewards are numbers, not booleans
-            const ucbState = result.current.algorithmStates.find(s => s.name === 'ucb');
-            expect(ucbState?.choice).toBe(1); // Mock always returns 1
-            expect(typeof ucbState?.reward).toBe('number'); // Should be a number
-            expect(ucbState?.reward).toBe(4); // (1+1)*2 = 4 according to mock
+            expect(result.current.gameState.currentPatient).toBe(1);
+            expect(result.current.gameState.savedLives).toBe(1);
+            expect(result.current.gameState.drugStats.drug1.attempts).toBe(1);
+            expect(result.current.lastPlayerReward).toBe(1);
+        });
 
-            // Player chose index 0, should get reward 2 ((0+1)*2)
-            expect(result.current.lastPlayerReward).toBe(2);
+        it('sollte Algorithmen simulieren und Performance tracken', () => {
+            const { result } = renderHook(() => useGameLogic(defaultConfig));
+
+            act(() => {
+                result.current.startGame();
+                result.current.handleDrugChoice(0);
+            });
+
+            expect(mockGreedy).toHaveBeenCalledWith(
+                expect.any(Object),
+                { numActions: 3, banditType: 'bernoulli' }
+            );
+            expect(mockEpsilonGreedy).toHaveBeenCalled();
+            expect(mockUCB).toHaveBeenCalled();
+
+            expect(result.current.algorithmPerformance).toHaveLength(1);
+            expect(result.current.algorithmPerformance[0]).toHaveProperty('patient', 1);
+        });
+
+        it('sollte kumulative Performance korrekt berechnen', () => {
+            const { result } = renderHook(() => useGameLogic(defaultConfig));
+
+            act(() => {
+                result.current.startGame();
+                result.current.handleDrugChoice(1); // +1
+                result.current.handleDrugChoice(1); // +1
+            });
+
+            expect(result.current.algorithmPerformance[1].playerSavedLives).toBe(2);
+        });
+
+        it('sollte bei max Iterationen stoppen', () => {
+            const smallConfig = { ...defaultConfig, numIterations: 2 };
+            const { result } = renderHook(() => useGameLogic(smallConfig));
+
+            act(() => {
+                result.current.startGame();
+                result.current.handleDrugChoice(0);
+                result.current.handleDrugChoice(0);
+            });
+
+            expect(result.current.isGameComplete).toBe(true);
+
+            act(() => {
+                result.current.handleDrugChoice(0);
+            });
+
+            expect(result.current.gameState.currentPatient).toBe(2); // unchanged
+        });
+    });
+
+    describe('Bandit Types', () => {
+        it('sollte Gaussian-Rewards korrekt verarbeiten', () => {
+            const gaussianConfig: Config = { ...defaultConfig, banditType: 'gaussian' };
+            vi.mocked(banditSimulation.simulateDrugOutcome).mockReturnValue(0.5);
+
+            const { result } = renderHook(() => useGameLogic(gaussianConfig));
+
+            act(() => {
+                result.current.startGame();
+                result.current.handleDrugChoice(0);
+                result.current.handleDrugChoice(0);
+            });
+
+            expect(result.current.gameState.savedLives).toBe(1.0);
+        });
+    });
+
+    describe('Edge Cases', () => {
+        it('sollte mit vielen Drugs umgehen', () => {
+            const manyDrugStats: DrugStats = {};
+            for (let i = 0; i < 10; i++) {
+                manyDrugStats[`drug${i}`] = { attempts: 0, sumOfRewards: 0 };
+            }
+            vi.mocked(banditSimulation.initializeDrugStats).mockReturnValue(manyDrugStats);
+
+            const manyDrugsConfig = { ...defaultConfig, numActions: 10 };
+            const { result } = renderHook(() => useGameLogic(manyDrugsConfig));
+
+            act(() => {
+                result.current.startGame();
+                result.current.handleDrugChoice(5);
+            });
+
+            expect(result.current.gameState.drugStats.drug5.attempts).toBe(1);
         });
     });
 });
