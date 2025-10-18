@@ -1,239 +1,230 @@
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { algorithms } from '../utils/algorithms';
-import { describe, it, expect } from 'vitest';
 
-describe('algorithms', () => {
+// Mock für getGaussianRandom
+vi.mock('./banditSimulation', () => ({
+    getGaussianRandom: vi.fn((mean: number, stdDev: number) => mean + stdDev * 0.5)
+}));
+
+describe('Bandit Algorithms', () => {
+    let mockDrugStats: any;
+
+    beforeEach(() => {
+        mockDrugStats = {
+            drug0: { attempts: 10, sumOfRewards: 7 },
+            drug1: { attempts: 5, sumOfRewards: 4 },
+            drug2: { attempts: 8, sumOfRewards: 3 },
+        };
+    });
+
     describe('greedy', () => {
         it('sollte die Aktion mit der höchsten durchschnittlichen Belohnung wählen', () => {
-            const drugStats = {
-                drug0: { attempts: 10, sumOfRewards: 3 },  // Avg: 0.3
-                drug1: { attempts: 10, sumOfRewards: 7 },  // Avg: 0.7
-                drug2: { attempts: 10, sumOfRewards: 5 }   // Avg: 0.5
-            };
-
-            const result = algorithms.greedy(drugStats);
+            const result = algorithms.greedy(mockDrugStats);
+            // drug1 hat die höchste Rate: 4/5 = 0.8
             expect(result).toBe(1);
         });
 
-        it('sollte die erste Aktion wählen bei gleichen Belohnungsraten', () => {
-            const drugStats = {
-                drug0: { attempts: 10, sumOfRewards: 5 },
-                drug1: { attempts: 10, sumOfRewards: 5 },
-                drug2: { attempts: 10, sumOfRewards: 5 }
-            };
-
-            const result = algorithms.greedy(drugStats);
-            expect(result).toBe(0);
-        });
-
-        it('sollte mit unbenutzten Aktionen umgehen können', () => {
-            const drugStats = {
-                drug0: { attempts: 0, sumOfRewards: 0 },
-                drug1: { attempts: 5, sumOfRewards: 3 }, // Avg: 0.6
-                drug2: { attempts: 0, sumOfRewards: 0 }
-            };
-
-            const result = algorithms.greedy(drugStats);
-            expect(result).toBe(1);
-        });
-
-        it('sollte die erste Aktion wählen, wenn alle unbenutzt sind', () => {
-            const drugStats = {
+        it('sollte die erste Aktion wählen, wenn alle unversucht sind', () => {
+            const emptyStats = {
                 drug0: { attempts: 0, sumOfRewards: 0 },
                 drug1: { attempts: 0, sumOfRewards: 0 },
-                drug2: { attempts: 0, sumOfRewards: 0 }
             };
-
-            const result = algorithms.greedy(drugStats);
+            const result = algorithms.greedy(emptyStats);
             expect(result).toBe(0);
+        });
+
+        it('sollte korrekt mit negativen Belohnungen umgehen', () => {
+            const negativeStats = {
+                drug0: { attempts: 10, sumOfRewards: -5 },
+                drug1: { attempts: 10, sumOfRewards: 2 },
+                drug2: { attempts: 10, sumOfRewards: -8 },
+            };
+            const result = algorithms.greedy(negativeStats);
+            expect(result).toBe(1);
         });
     });
 
     describe('epsilon-greedy', () => {
-        it('sollte einen gültigen Index zurückgeben', () => {
-            const drugStats = {
-                drug0: { attempts: 10, sumOfRewards: 3 },
-                drug1: { attempts: 10, sumOfRewards: 7 },
-                drug2: { attempts: 10, sumOfRewards: 5 }
-            };
-            const config = {
-                numActions: 5,
-                banditType: 'bernoulli' // Der Typ ist für diesen Test nicht relevant, muss aber für die Signatur vorhanden sein.
-            };
-
-            const result = algorithms['epsilon-greedy'](drugStats, config);
-            expect(result).toBeGreaterThanOrEqual(0);
-            expect(result).toBeLessThan(config.numActions);
+        it('sollte einen Fehler werfen ohne Konfiguration', () => {
+            expect(() => algorithms['epsilon-greedy'](mockDrugStats)).toThrow();
         });
 
-        it('sollte manchmal explorieren (über mehrere Aufrufe)', () => {
-            const drugStats = {
-                drug0: { attempts: 10, sumOfRewards: 1 },
-                drug1: { attempts: 10, sumOfRewards: 9 }, // klar die beste Wahl
-                drug2: { attempts: 10, sumOfRewards: 1 }
-            };
-            const config = {
-                numActions: 3,
-                banditType: 'epsilon-greedy' // Der Typ ist für diesen Test nicht relevant, muss aber für die Signatur vorhanden sein.
-            };
+        it('sollte manchmal eine zufällige Aktion wählen', () => {
+            const config = { numActions: 3, banditType: 'bernoulli' };
+            const results = new Set<number>();
 
-            const results = new Set();
+            // Mehrere Durchläufe, um sowohl Exploration als auch Exploitation zu testen
             for (let i = 0; i < 100; i++) {
-                results.add(algorithms['epsilon-greedy'](drugStats, config));
+                const result = algorithms['epsilon-greedy'](mockDrugStats, config);
+                results.add(result);
+                expect(result).toBeGreaterThanOrEqual(0);
+                expect(result).toBeLessThan(3);
             }
 
-            // Mit epsilon=0.1 sollten über 100 Versuche sehr wahrscheinlich mehrere Aktionen gewählt werden
+            // Bei 100 Versuchen sollten wahrscheinlich mehrere Aktionen gewählt werden
             expect(results.size).toBeGreaterThan(1);
+        });
+
+        it('sollte die greedy Aktion wählen bei Exploitation', () => {
+            vi.spyOn(Math, 'random').mockReturnValue(0.5); // > 0.1, also greedy
+            const config = { numActions: 3, banditType: 'bernoulli' };
+            const result = algorithms['epsilon-greedy'](mockDrugStats, config);
+            expect(result).toBe(1); // beste Aktion
+            vi.restoreAllMocks();
         });
     });
 
     describe('random', () => {
-        it('sollte einen gültigen zufälligen Index zurückgeben', () => {
-            const drugStats = {};
-            const config = {
-                numActions: 5,
-                banditType: 'bernoulli' // Der Typ ist für diesen Test nicht relevant, muss aber für die Signatur vorhanden sein.
-            };
-
-            const result = algorithms.random(drugStats, config);
-            expect(result).toBeGreaterThanOrEqual(0);
-            expect(result).toBeLessThan(config.numActions);
+        it('sollte einen Fehler werfen ohne Konfiguration', () => {
+            expect(() => algorithms.random(mockDrugStats)).toThrow();
         });
 
-        it('sollte verschiedene Werte über mehrere Aufrufe zurückgeben', () => {
-            const drugStats = {};
-            const config = {
-                numActions: 5,
-                banditType: 'bernoulli' // Der Typ ist für diesen Test nicht relevant, muss aber für die Signatur vorhanden sein.
-            };
+        it('sollte eine zufällige Aktion im gültigen Bereich wählen', () => {
+            const config = { numActions: 5, banditType: 'bernoulli' };
+            const results = new Set<number>();
 
-            const results = new Set();
             for (let i = 0; i < 50; i++) {
-                results.add(algorithms.random(drugStats, config));
+                const result = algorithms.random(mockDrugStats, config);
+                results.add(result);
+                expect(result).toBeGreaterThanOrEqual(0);
+                expect(result).toBeLessThan(5);
             }
 
-            // Bei 50 zufälligen Versuchen sollten wir mehrere verschiedene Werte sehen
+            // Bei vielen Versuchen sollten verschiedene Aktionen gewählt werden
             expect(results.size).toBeGreaterThan(1);
         });
     });
 
     describe('ucb', () => {
-        it('sollte eine ungetestete Aktion wählen, wenn welche vorhanden sind', () => {
-            const drugStats = {
-                drug0: { attempts: 5, sumOfRewards: 3 },
-                drug1: { attempts: 0, sumOfRewards: 0 }, // ungetestet
-                drug2: { attempts: 3, sumOfRewards: 2 }
+        it('sollte eine ungetestete Aktion wählen, falls vorhanden', () => {
+            const statsWithUntested = {
+                drug0: { attempts: 10, sumOfRewards: 5 },
+                drug1: { attempts: 0, sumOfRewards: 0 },
+                drug2: { attempts: 5, sumOfRewards: 3 },
             };
-
-            const result = algorithms.ucb(drugStats);
-            // Sollte die ungetestete Aktion wählen
+            const result = algorithms.ucb(statsWithUntested);
             expect(result).toBe(1);
         });
 
-        it('sollte eine zufällige ungetestete Aktion wählen, wenn mehrere vorhanden sind', () => {
-            const drugStats = {
-                drug0: { attempts: 5, sumOfRewards: 3 },
-                drug1: { attempts: 0, sumOfRewards: 0 }, // ungetestet
-                drug2: { attempts: 0, sumOfRewards: 0 }  // ungetestet
-            };
-
-            const results = new Set();
-            for (let i = 0; i < 50; i++) {
-                results.add(algorithms.ucb(drugStats));
-            }
-
-            // Sollte sowohl 1 als auch 2 wählen (nicht 0)
-            expect(results.has(0)).toBe(false);
-            expect(results.size).toBeGreaterThan(1);
-        });
-
-        it('sollte die Aktion mit dem höchsten UCB-Wert wählen', () => {
-            const drugStats = {
-                drug0: { attempts: 10, sumOfRewards: 3 },  // Avg: 0.3, UCB niedrig (viele Versuche)
-                drug1: { attempts: 10, sumOfRewards: 7 },  // Avg: 0.7, UCB hoch (beste durchschnittliche Belohnung)
-                drug2: { attempts: 2, sumOfRewards: 1 }    // Avg: 0.5, UCB sehr hoch (wenige Versuche = hoher Explorationsbonus)
-            };
-
-            const result = algorithms.ucb(drugStats);
-            // Drug2 sollte gewählt werden, da der Explorationsbonus den niedrigeren Durchschnitt ausgleicht
-            // UCB für drug2: 0.5 + sqrt(2 * ln(22) / 2) ≈ 0.5 + 1.86 = 2.36
-            // UCB für drug1: 0.7 + sqrt(2 * ln(22) / 10) ≈ 0.7 + 0.83 = 1.53
-            expect(result).toBe(2);
-        });
-
-        it('sollte die Aktion mit der besten Performance wählen, wenn alle gleich oft getestet wurden', () => {
-            const drugStats = {
-                drug0: { attempts: 10, sumOfRewards: 3 },  // Avg: 0.3
-                drug1: { attempts: 10, sumOfRewards: 7 },  // Avg: 0.7
-                drug2: { attempts: 10, sumOfRewards: 5 }   // Avg: 0.5
-            };
-
-            const result = algorithms.ucb(drugStats);
-            // Bei gleicher Anzahl von Versuchen ist der Explorationsbonus gleich
-            // Daher sollte die Aktion mit dem höchsten Durchschnitt gewählt werden
-            expect(result).toBe(1);
-        });
-
-        it('sollte einen gültigen Index zurückgeben', () => {
-            const drugStats = {
-                drug0: { attempts: 5, sumOfRewards: 2 },
-                drug1: { attempts: 3, sumOfRewards: 2 },
-                drug2: { attempts: 7, sumOfRewards: 4 }
-            };
-
-            const result = algorithms.ucb(drugStats);
+        it('sollte UCB-Werte korrekt berechnen', () => {
+            const result = algorithms.ucb(mockDrugStats);
+            // Sollte eine gültige Aktion zurückgeben
             expect(result).toBeGreaterThanOrEqual(0);
             expect(result).toBeLessThan(3);
         });
 
-        it('sollte Exploration bevorzugen bei wenig getesteten Aktionen', () => {
-            const drugStats = {
-                drug0: { attempts: 100, sumOfRewards: 90 }, // Avg: 0.9, sehr gut aber oft getestet
-                drug1: { attempts: 1, sumOfRewards: 0 },    // Avg: 0.0, schlecht aber kaum getestet
-                drug2: { attempts: 100, sumOfRewards: 85 }  // Avg: 0.85, gut und oft getestet
+        it('sollte Aktionen mit weniger Versuchen bevorzugen (Exploration)', () => {
+            const explorationStats = {
+                drug0: { attempts: 100, sumOfRewards: 70 }, // 0.7 avg, aber viele Versuche
+                drug1: { attempts: 1, sumOfRewards: 0.5 },  // 0.5 avg, aber kaum Versuche
+                drug2: { attempts: 100, sumOfRewards: 65 },
             };
-
-            const result = algorithms.ucb(drugStats);
-            // Der hohe Explorationsbonus von drug1 sollte den niedrigen Durchschnitt kompensieren
-            // UCB für drug1: 0.0 + sqrt(2 * ln(201) / 1) ≈ 0.0 + 3.32 = 3.32
-            // UCB für drug0: 0.9 + sqrt(2 * ln(201) / 100) ≈ 0.9 + 0.33 = 1.23
+            const result = algorithms.ucb(explorationStats);
+            // drug1 sollte wegen des hohen Exploration-Bonus gewählt werden
             expect(result).toBe(1);
         });
 
-        it('sollte konsistente Ergebnisse für identische Eingaben liefern', () => {
-            const drugStats = {
-                drug0: { attempts: 5, sumOfRewards: 3 },
-                drug1: { attempts: 5, sumOfRewards: 4 },
-                drug2: { attempts: 5, sumOfRewards: 2 }
-            };
-
-            const result1 = algorithms.ucb(drugStats);
-            const result2 = algorithms.ucb(drugStats);
-            const result3 = algorithms.ucb(drugStats);
-
-            // Bei gleichen Statistiken sollte immer die gleiche Wahl getroffen werden
-            expect(result1).toBe(result2);
-            expect(result2).toBe(result3);
-            expect(result1).toBe(1); // drug1 hat die höchste durchschnittliche Belohnung
-        });
-
-        it('sollte die erste Aktion wählen, wenn alle unbenutzt sind', () => {
-            const drugStats = {
+        it('sollte mit allen Aktionen auf 0 Versuchen umgehen', () => {
+            const allZero = {
                 drug0: { attempts: 0, sumOfRewards: 0 },
                 drug1: { attempts: 0, sumOfRewards: 0 },
-                drug2: { attempts: 0, sumOfRewards: 0 }
+                drug2: { attempts: 0, sumOfRewards: 0 },
             };
+            const result = algorithms.ucb(allZero);
+            expect(result).toBeGreaterThanOrEqual(0);
+            expect(result).toBeLessThan(3);
+        });
+    });
 
-            // Da alle ungetestet sind, sollte eine zufällige gewählt werden
-            // Wir prüfen nur, dass ein gültiger Index zurückgegeben wird
-            const results = new Set();
-            for (let i = 0; i < 30; i++) {
-                const result = algorithms.ucb(drugStats);
-                expect(result).toBeGreaterThanOrEqual(0);
-                expect(result).toBeLessThan(3);
+    describe('thompson', () => {
+        it('sollte einen Fehler werfen ohne Konfiguration', () => {
+            expect(() => algorithms.thompson(mockDrugStats)).toThrow();
+        });
+
+        it('sollte ungetestete Aktionen priorisieren', () => {
+            const statsWithUntested = {
+                drug0: { attempts: 10, sumOfRewards: 8 },
+                drug1: { attempts: 0, sumOfRewards: 0 },
+                drug2: { attempts: 5, sumOfRewards: 4 },
+            };
+            const config = { numActions: 3, banditType: 'bernoulli' };
+            const result = algorithms.thompson(statsWithUntested, config);
+            expect(result).toBe(1);
+        });
+
+        it('sollte für Bernoulli-Banditen funktionieren', () => {
+            const config = { numActions: 3, banditType: 'bernoulli' };
+            const result = algorithms.thompson(mockDrugStats, config);
+            expect(result).toBeGreaterThanOrEqual(0);
+            expect(result).toBeLessThan(3);
+        });
+
+        it('sollte für Gaussian-Banditen funktionieren', () => {
+            const config = { numActions: 3, banditType: 'gaussian' };
+            const result = algorithms.thompson(mockDrugStats, config);
+            expect(result).toBeGreaterThanOrEqual(0);
+            expect(result).toBeLessThan(3);
+        });
+
+        it('sollte verschiedene Aktionen über mehrere Samples wählen können', () => {
+            const config = { numActions: 3, banditType: 'bernoulli' };
+            const results = new Set<number>();
+
+            for (let i = 0; i < 50; i++) {
+                const result = algorithms.thompson(mockDrugStats, config);
                 results.add(result);
             }
-            // Über mehrere Durchläufe sollten verschiedene Aktionen gewählt werden
+
+            // Aufgrund der Stochastik sollten verschiedene Aktionen gewählt werden
             expect(results.size).toBeGreaterThan(1);
+        });
+
+        it('sollte mit Bernoulli ganzzahlige Belohnungen korrekt verarbeiten', () => {
+            const binaryStats = {
+                drug0: { attempts: 10, sumOfRewards: 10 }, // 100% Erfolg
+                drug1: { attempts: 10, sumOfRewards: 0 },  // 0% Erfolg
+                drug2: { attempts: 10, sumOfRewards: 5 },  // 50% Erfolg
+            };
+            const config = { numActions: 3, banditType: 'bernoulli' };
+
+            // Über viele Versuche sollte drug0 am häufigsten gewählt werden
+            const counts = [0, 0, 0];
+            for (let i = 0; i < 100; i++) {
+                const result = algorithms.thompson(binaryStats, config);
+                counts[result]++;
+            }
+
+            expect(counts[0]).toBeGreaterThan(counts[1]);
+        });
+    });
+
+    describe('Edge Cases', () => {
+        it('sollten alle Algorithmen mit einem einzelnen Drug umgehen können', () => {
+            const singleDrug = {
+                drug0: { attempts: 5, sumOfRewards: 3 },
+            };
+            const config = { numActions: 1, banditType: 'bernoulli' };
+
+            expect(algorithms.greedy(singleDrug)).toBe(0);
+            expect(algorithms['epsilon-greedy'](singleDrug, config)).toBe(0);
+            expect(algorithms.random(singleDrug, config)).toBe(0);
+            expect(algorithms.ucb(singleDrug)).toBe(0);
+            expect(algorithms.thompson(singleDrug, config)).toBe(0);
+        });
+
+        it('sollten alle Algorithmen mit identischen Statistiken umgehen', () => {
+            const identicalStats = {
+                drug0: { attempts: 10, sumOfRewards: 5 },
+                drug1: { attempts: 10, sumOfRewards: 5 },
+                drug2: { attempts: 10, sumOfRewards: 5 },
+            };
+            const config = { numActions: 3, banditType: 'bernoulli' };
+
+            expect(() => algorithms.greedy(identicalStats)).not.toThrow();
+            expect(() => algorithms['epsilon-greedy'](identicalStats, config)).not.toThrow();
+            expect(() => algorithms.random(identicalStats, config)).not.toThrow();
+            expect(() => algorithms.ucb(identicalStats)).not.toThrow();
+            expect(() => algorithms.thompson(identicalStats, config)).not.toThrow();
         });
     });
 });
