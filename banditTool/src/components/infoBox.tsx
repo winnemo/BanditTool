@@ -1,5 +1,5 @@
 import { Coffee, Target, Brain, TrendingUp } from 'lucide-react';
-import './infobox.css';
+import './infoBox.css';
 
 export function InfoBox() {
     return (
