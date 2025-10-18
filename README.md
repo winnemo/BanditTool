@@ -1,36 +1,74 @@
-# Voraussetzungen
+# Multi-Armed Bandit Coffee Shop 
 
-- Node.js installieren
-    - Node.js [Download](https://nodejs.org/en/download)
-    - Empfohlene Version: v22.19.0 (LTS)
-- Git-Repository clonen
-    - SSH-Key in Github einrichten (
-      empfohlen): [Anleitung](https://docs.github.com/en/authentication/connecting-to-github-with-ssh/generating-a-new-ssh-key-and-adding-it-to-the-ssh-agent)
-    - Im gewünschten Ordner über Terminal klonen:
-      ```bash
-      git clone git@github.com:winnemo/BanditTool.git
-      ```
+Willkommen beim Interactive Coffee Shop – einer spielerischen Demonstration des Multi-Armed Bandit Problems! Dieses Projekt visualisiert verschiedene Lernalgorithmen in einem interaktiven Coffeeshop-Szenario, in dem ein Agent lernt, die optimalen Getränke für Kunden auszuwählen.
 
-# Einrichten für User
+## Über das Projekt
 
-#### 1. Terminal / CMD öffnen
+Dieses Repository enthält eine webbasierte Simulation, die zeigt, wie Reinforcement Learning Algorithmen (wie Epsilon-Greedy, UCB, Thompson Sampling) Entscheidungen treffen und dabei lernen.
 
-#### 2. in den Ordner des geklonten Repos wechseln
+##  Website aufrufen
 
-         cd {Repository-Ordner}
+### Option 1: Direkt über GitHub Pages (empfohlen)
 
-#### 3. Abhängigkeiten installieren
+Die Website ist direkt online verfügbar – keine Installation erforderlich:
 
-         npm install
+👉 **[https://winnemo.github.io/BanditTool/](https://winnemo.github.io/BanditTool/)**
 
-#### 4. Programm starten
+### Option 2: Lokale Installation
 
-        npm run
+Falls Sie das Projekt lokal ausführen möchten:
 
-#### 5. Website im Browser öffnen
+#### Voraussetzungen
+- Node.js (empfohlene Version: v22.19.0 LTS)
+  - [Node.js Download](https://nodejs.org/en/download)
+- Git
 
-       http://localhost:5173/
+#### Installation & Start
 
-#### 6. Programm beenden
+1. **Repository klonen**
+   ```bash
+   git clone git@github.com:winnemo/BanditTool.git
+   ```
+   *Alternativ per HTTPS:*
+   ```bash
+   git clone https://github.com/winnemo/BanditTool.git
+   ```
 
-        Strg + C   /   Q + Enter
+2. **In den Projektordner wechseln**
+   ```bash
+   cd BanditTool
+   ```
+
+3. **Abhängigkeiten installieren**
+   ```bash
+   npm install
+   ```
+
+4. **Development-Server starten**
+   ```bash
+   npm run dev
+   ```
+
+5. **Website öffnen**
+   
+   Öffnen Sie Ihren Browser und navigieren Sie zu:
+   ```
+   http://localhost:5173/
+   ```
+
+6. **Server beenden**
+   
+   Drücken Sie im Terminal:
+   ```
+   Strg + C   (Windows/Linux)
+   Cmd + C    (Mac)
+   ```
+   Dann bestätigen Sie mit `Y` oder `Enter`
+
+## Weitere Informationen
+
+Für SSH-Authentifizierung mit GitHub siehe: [GitHub SSH Setup Guide](https://docs.github.com/en/authentication/connecting-to-github-with-ssh/generating-a-new-ssh-key-and-adding-it-to-the-ssh-agent)
+
+---
+
+**Viel Spaß beim Experimentieren mit den Bandit-Algorithmen! ☕🤖**
