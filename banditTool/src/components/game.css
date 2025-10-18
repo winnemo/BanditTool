@@ -511,3 +511,7 @@
     border-left: 4px solid #059669;
     font-family: 'Courier New', Courier, monospace;
 }
+
+.bean-stat-overlay{
+    font-size: 0.9rem;
+}

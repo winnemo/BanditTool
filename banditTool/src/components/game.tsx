@@ -3,6 +3,7 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Responsi
 import { PLAYER_COLOR, ALGORITHM_COLORS } from '../utils/styleConstants';
 import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
+import {type DrugStats} from '../hooks/useGameLogic';
 import './game.css';
 
 // Die Typen aus dem useGameLogic Hook importieren/neu definieren
@@ -24,6 +25,7 @@ interface PayloadEntry {
 interface GameState {
     currentPatient: number;
     savedLives: number;
+    drugStats: DrugStats;
 }
 interface Config {
     numActions: number;
@@ -243,8 +245,8 @@ const CoffeeBeans = [
     "Bourbon",
     "Geisha",
     "Maragogype",
-    "Kopi Luwak",
-    "Jamaica Blue Mountain"
+    "Mokka",
+    "Java"
 ];
 
 
@@ -322,17 +324,46 @@ export function GameArea({
 
                     <div className="card-content">
                         <div className="beans-grid-compact">
-                            {Array.from({ length: config.numActions }, (_, index) => (
-                                <button
-                                    key={index + 1}
-                                    onClick={() => onBeanClick(index)}
-                                    className="bean-button"
-                                    disabled={isGameComplete}
-                                >
-                                    <Coffee className="bean-icon" />
-                                    <span className="bean-text">{CoffeeBeans[index]}</span>
-                                </button>
-                            ))}
+                            {Array.from({length: config.numActions}, (_, index) => {
+
+                                const drugKey = `drug${index}`;
+                                const stats = gameState.drugStats[drugKey];
+
+                                let displayText = "???";
+                                let isNotClicked = true;
+
+                                // Prüfen, ob die Bohne schon geklickt wurde
+                                if (stats && stats.attempts > 0) {
+                                    isNotClicked = false;
+                                    const meanReward = stats.sumOfRewards / stats.attempts;
+
+                                    // Text je nach Bandit-Typ formatieren
+                                    if (config.banditType === 'bernoulli') {
+                                        displayText = `Ø: ${(meanReward * 100).toFixed(0)}%`;
+                                    } else {
+                                        displayText = `Ø: ${meanReward.toFixed(1)} / 10`;
+                                    }
+                                }
+
+                                return (
+                                    <button
+                                        key={index + 1}
+                                        onClick={() => onBeanClick(index)}
+                                        className="bean-button" // Button-Styling bleibt gleich
+                                        disabled={isGameComplete}
+                                    >
+                                        <Coffee className="bean-icon"/>
+                                        <span className="bean-text">{CoffeeBeans[index]}</span>
+
+                                        <span
+                                            className={`bean-stat-overlay ${isNotClicked ? 'not-clicked' : ''}`}
+                                        >
+                        {displayText}
+                    </span>
+
+                                    </button>
+                                );
+                            })}
                         </div>
 
                         {/* Performance Chart (Logik aus PerformanceChart.tsx übernommen) */}
@@ -344,7 +375,8 @@ export function GameArea({
                             </div>
                             <div className="card-content">
                                 <ResponsiveContainer width="100%" height={300}>
-                                    <LineChart data={algorithmPerformance} margin={{top: 5, right: 20, left: 20, bottom: 25}}>
+                                    <LineChart data={algorithmPerformance}
+                                               margin={{top: 5, right: 20, left: 20, bottom: 25}}>
                                         <CartesianGrid strokeDasharray="3 3"/>
                                         <XAxis
                                             dataKey="patient"
@@ -431,7 +463,6 @@ export function GameArea({
                 </div>
 
 
-
                 {/* Algorithm Actions */}
                 <div className="card">
                     <div className="card-header">
@@ -457,7 +488,6 @@ export function GameArea({
                                             <div key={state.name} className="algo-result-box"
                                                  style={{borderColor: color, color: color}}>
 
-                                                {/* --- START: MODIFIZIERTER HEADER --- */}
                                                 <div className="algo-header">
                                                     {/* Wrapper für Name + Info-Button */}
                                                     <div className="algorithm-action-name-wrapper">
@@ -472,7 +502,6 @@ export function GameArea({
                                                     </div>
                                                     <span>wählt {CoffeeBeans[state.choice]} </span>
                                                 </div>
-                                                {/* --- ENDE: MODIFIZIERTER HEADER --- */}
 
                                                 <div className="algo-outcome">
                                                     {config.banditType === 'bernoulli' ? (
@@ -488,7 +517,6 @@ export function GameArea({
                                                     )}
                                                 </div>
 
-                                                {/* --- START: HINZUGEFÜGTER POPOVER-AUFRUF --- */}
                                                 <AlgorithmPopover
                                                     isOpen={openAlgorithm === state.name}
                                                     onClose={() => setOpenAlgorithm(null)}
@@ -497,7 +525,6 @@ export function GameArea({
                                                     pseudocode={info.pseudocode}
                                                     complexity={info.complexity}
                                                 />
-                                                {/* --- ENDE: HINZUGEFÜGTER POPOVER-AUFRUF --- */}
 
                                             </div>
                                         );

@@ -2,6 +2,7 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import '@testing-library/jest-dom';
 import { GameArea } from '../components/game';
+import {type DrugStats} from '../hooks/useGameLogic.tsx';
 
 // Mock ResizeObserver für Recharts
 globalThis.ResizeObserver = vi.fn().mockImplementation(() => ({
@@ -15,6 +16,7 @@ type AlgorithmType = 'greedy' | 'epsilon-greedy' | 'random' | 'ucb' | 'thompson'
 interface GameState {
     currentPatient: number;
     savedLives: number;
+    drugStats: DrugStats;
 }
 
 interface Config {
@@ -47,6 +49,11 @@ describe('GameArea', () => {
         defaultGameState = {
             currentPatient: 1,
             savedLives: 5,
+            drugStats: {
+                'drug0': { attempts: 3, sumOfRewards: 3 },
+                'drug1': { attempts: 2, sumOfRewards: 2 },
+                'drug2': { attempts: 0, sumOfRewards: 0 }
+            }
         };
 
         defaultConfig = {
@@ -201,7 +208,18 @@ describe('GameArea', () => {
             const initialStates = [
                 { name: 'greedy' as AlgorithmType, choice: -1, reward: null },
             ];
-            renderGameArea({ currentPatient: 0, savedLives: 0 }, defaultConfig, false, [], initialStates);
+
+            const initialGameState = {
+                currentPatient: 0,
+                savedLives: 0,
+                drugStats: {
+                    'drug0': {attempts: 0, sumOfRewards: 0},
+                    'drug1': {attempts: 0, sumOfRewards: 0},
+                    'drug2': {attempts: 0, sumOfRewards: 0}
+                }
+            };
+
+            renderGameArea(initialGameState, defaultConfig, false, [], initialStates);
 
             expect(screen.getByText(/Die Algorithmen warten auf deine erste Wahl/)).toBeInTheDocument();
         });
@@ -262,7 +280,11 @@ describe('GameArea', () => {
         });
 
         it('sollte finalen Punktestand für Bernoulli anzeigen', () => {
-            const finalState = { currentPatient: 10, savedLives: 8 };
+            const finalState = {
+                currentPatient: 10,
+                savedLives: 8,
+                drugStats: defaultGameState.drugStats
+            };
             renderGameArea(finalState, defaultConfig, true);
 
             expect(screen.getByText(/Dein finaler Punktestand/)).toBeInTheDocument();
@@ -271,7 +293,11 @@ describe('GameArea', () => {
 
         it('sollte finale Durchschnittsbewertung für Gaussian anzeigen', () => {
             const gaussianConfig = { ...defaultConfig, banditType: 'gaussian' as const };
-            const finalState = { currentPatient: 10, savedLives: 75 };
+            const finalState = {
+                currentPatient: 10,
+                savedLives: 75,
+                drugStats: defaultGameState.drugStats
+            };
             renderGameArea(finalState, gaussianConfig, true);
 
             expect(screen.getByText(/Deine finale Ø Bewertung/)).toBeInTheDocument();
@@ -301,7 +327,7 @@ describe('GameArea', () => {
             renderGameArea(defaultGameState, manyBeansConfig);
 
             expect(screen.getByText('Arabica')).toBeInTheDocument();
-            expect(screen.getByText('Jamaica Blue Mountain')).toBeInTheDocument();
+            expect(screen.getByText('Java')).toBeInTheDocument();
         });
 
         it('sollte mit einer Bohne umgehen', () => {

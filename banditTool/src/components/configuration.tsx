@@ -103,10 +103,10 @@ export function ConfigPanel({
 
         const parsedValue = typeof config[field] === 'number' ? parseInt(value, 10) : value;
 
-        if (field === 'numActions' && (parsedValue < 1 || parsedValue > 10)) return;
+
+        if (field === 'numActions' && (parsedValue < 1 || parsedValue > 10 )) return;
 
         if (field === 'numIterations' && (parsedValue < 1 || parsedValue > 50)) return;
-
 
 
         setConfig({ ...config, [field]: parsedValue });
