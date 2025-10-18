@@ -138,7 +138,7 @@ export const useGameLogic = (config: Config) => {
         const performanceUpdate: { [key: string]: number } = {};
 
         // Iteriere nur über die AKTIVEN Algorithmen aus der Config
-        config.algorithms.forEach((algoName: AlgorithmType) => {
+        ALL_ALGORITHMS.forEach((algoName: AlgorithmType) => {
             const currentAlgoStats = algorithmStats[algoName];
             if (!currentAlgoStats) return;
 
