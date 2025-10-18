@@ -52,17 +52,23 @@ export const algorithms: { [key: string]: AlgorithmFunction } = {
      */
     greedy: (drugStats) => {
         let bestDrug = 0;
-        let bestAverageReward = -1;
+        let bestAverageReward = -Infinity; // Starte so niedrig wie möglich
 
         Object.keys(drugStats).forEach((drugKey, index) => {
             const stats = drugStats[drugKey];
-            const averageReward = stats.attempts > 0 ? stats.sumOfRewards / stats.attempts : 0;
+
+            // Wenn 0 Versuche, setze den Wert optimistisch auf 0.5
+            // Sonst berechne den echten Durchschnitt.
+            const averageReward = stats.attempts > 0
+                ? (stats.sumOfRewards / stats.attempts)
+                : 0.5; // Optimistischer Startwert
 
             if (averageReward > bestAverageReward) {
                 bestAverageReward = averageReward;
                 bestDrug = index;
             }
         });
+
         return bestDrug;
     },
 
