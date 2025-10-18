@@ -108,6 +108,7 @@ export function GameArea({
 
     return (
         <div className="game-area-container">
+
             {/* Status Bar */}
             <div className="game-status-bar">
                 <div className="status-badge status-badge-primary">
@@ -130,22 +131,7 @@ export function GameArea({
                             Wähle eine Kaffeebohne
                         </h2>
                     </div>
-                    {isGameComplete && (
-                        <div className="game-complete-message">
-                            <Trophy className="complete-icon"/>
-                            <p>Spiel beendet! Sehr gut gemacht!</p>
-                            <p className="score-text">
-                                {config.banditType === 'bernoulli'
-                                    ? 'Dein finaler Punktestand'
-                                    : 'Deine finale Ø Bewertung'
-                                }: {
-                                config.banditType === 'bernoulli'
-                                    ? gameState.savedLives.toFixed(0)
-                                    : (gameState.savedLives / config.numIterations).toFixed(1)
-                            }
-                            </p>
-                        </div>
-                    )}
+
 
                     <div className="card-content">
                         <div className="beans-grid-compact">
@@ -162,6 +148,59 @@ export function GameArea({
                             ))}
                         </div>
 
+                        {/* Performance Chart (Logik aus PerformanceChart.tsx übernommen) */}
+                        <div className="card card-chart">
+                            <div className="card-header">
+                                <h3 className="card-title-small">
+                                    <TrendingUp className="config-icon-small"/> Performance
+                                </h3>
+                            </div>
+                            <div className="card-content">
+                                <ResponsiveContainer width="100%" height={300}>
+                                    <LineChart data={algorithmPerformance} margin={{top: 5, right: 20, left: 20, bottom: 25}}>
+                                        <CartesianGrid strokeDasharray="3 3"/>
+                                        <XAxis
+                                            dataKey="patient"
+                                            label={{value: 'Runde (Tasse)', position: 'insideBottom', offset: -15}}
+                                            domain={[0, config.numIterations]}
+                                        />
+                                        <YAxis
+                                            label={{
+                                                value: 'Kum. Punkte',
+                                                angle: -90,
+                                                position: 'insideLeft',
+                                                dy: 40
+
+                                            }}
+                                            domain={[0, config.numIterations]}
+                                            allowDecimals={false}
+                                        />
+                                        <Tooltip content={<CustomTooltip/>}/>
+                                        <Legend wrapperStyle={{paddingTop: '25px'}}/>
+                                        <Line
+                                            type="monotone"
+                                            dataKey="playerSavedLives"
+                                            stroke={PLAYER_COLOR}
+                                            strokeWidth={2}
+                                            name="Deine Performance"
+                                            dot={{r: 4}}
+                                        />
+                                        {config.algorithms.map((algoName, index) => (
+                                            <Line
+                                                key={algoName}
+                                                type="monotone"
+                                                dataKey={algoName}
+                                                stroke={ALGORITHM_COLORS[index % ALGORITHM_COLORS.length]}
+                                                strokeWidth={2}
+                                                name={`${algoName.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase())}`}
+                                                dot={{r: 4}}
+                                            />
+                                        ))}
+                                    </LineChart>
+                                </ResponsiveContainer>
+                            </div>
+                        </div>
+
 
                     </div>
                 </div>
@@ -169,6 +208,24 @@ export function GameArea({
 
             {/* Right Column - Stats & Chart */}
             <div className="game-column game-column-side">
+
+                {isGameComplete && (
+                    <div className="game-complete-message">
+                        <Trophy className="complete-icon"/>
+                        <p>Spiel beendet! Sehr gut gemacht!</p>
+                        <p className="score-text">
+                            {config.banditType === 'bernoulli'
+                                ? 'Dein finaler Punktestand'
+                                : 'Deine finale Ø Bewertung'
+                            }: {
+                            config.banditType === 'bernoulli'
+                                ? gameState.savedLives.toFixed(0)
+                                : (gameState.savedLives / config.numIterations).toFixed(1)
+                        }
+                        </p>
+                    </div>
+                )}
+
                 {/* Cups Counter, zeigt den Punktestand */}
                 <div className="card cups-card">
                     <div className="card-content">
@@ -185,6 +242,8 @@ export function GameArea({
                         </div>
                     </div>
                 </div>
+
+
 
                 {/* Algorithm Actions */}
                 <div className="card">
@@ -231,58 +290,6 @@ export function GameArea({
                     </div>
                 </div>
 
-                {/* Performance Chart (Logik aus PerformanceChart.tsx übernommen) */}
-                <div className="card card-chart">
-                    <div className="card-header">
-                        <h3 className="card-title-small">
-                            <TrendingUp className="config-icon-small"/> Performance
-                        </h3>
-                    </div>
-                    <div className="card-content">
-                        <ResponsiveContainer width="100%" height={300}>
-                            <LineChart data={algorithmPerformance} margin={{top: 5, right: 20, left: 20, bottom: 25}}>
-                                <CartesianGrid strokeDasharray="3 3"/>
-                                <XAxis
-                                    dataKey="patient"
-                                    label={{value: 'Runde (Tasse)', position: 'insideBottom', offset: -15}}
-                                    domain={[0, config.numIterations]}
-                                />
-                                <YAxis
-                                    label={{
-                                        value: 'Kum. Punkte',
-                                        angle: -90,
-                                        position: 'insideLeft',
-                                        dy: 40
-
-                                    }}
-                                    domain={[0, config.numIterations]}
-                                    allowDecimals={false}
-                                />
-                                <Tooltip content={<CustomTooltip/>}/>
-                                <Legend wrapperStyle={{paddingTop: '25px'}}/>
-                                <Line
-                                    type="monotone"
-                                    dataKey="playerSavedLives"
-                                    stroke={PLAYER_COLOR}
-                                    strokeWidth={2}
-                                    name="Deine Performance"
-                                    dot={{r: 4}}
-                                />
-                                {config.algorithms.map((algoName, index) => (
-                                    <Line
-                                        key={algoName}
-                                        type="monotone"
-                                        dataKey={algoName}
-                                        stroke={ALGORITHM_COLORS[index % ALGORITHM_COLORS.length]}
-                                        strokeWidth={2}
-                                        name={`${algoName.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase())}`}
-                                        dot={{r: 4}}
-                                    />
-                                ))}
-                            </LineChart>
-                        </ResponsiveContainer>
-                    </div>
-                </div>
             </div>
         </div>
     );
