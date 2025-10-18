@@ -3,9 +3,6 @@ import { type DrugStats } from '../hooks/useGameLogic';
 type BanditType = 'bernoulli' | 'gaussian';
 /**
  * Generiert die "wahren" Erfolgsparameter für eine neue Simulation.
- * @param {number} numActions - Die Anzahl der Aktionen (Bohnen).
- * @param {string} banditType - Der Typ des Banditen ('bernoulli' oder 'gaussian').
- * @returns {Array<number|object>} Ein Array mit den Erfolgsparametern.
  */
 export const generateDrugProbabilities = (numActions : number, banditType : BanditType) => {
     const probs = [];
@@ -28,9 +25,6 @@ export const generateDrugProbabilities = (numActions : number, banditType : Band
 
 /**
  * Erzeugt eine normalverteilte Zufallszahl mittels der Box-Muller-Transformation.
- * @param {number} mean - Der Mittelwert der Verteilung.
- * @param {number} std - Die Standardabweichung der Verteilung.
- * @returns {number} Eine normalverteilte Zufallszahl.
  */
 export function getGaussianRandom(mean: number, std: number) {
     let u = 0, v = 0;
@@ -45,10 +39,6 @@ export function getGaussianRandom(mean: number, std: number) {
 
 /**
  * Simuliert das Ergebnis einer einzelnen Aktion basierend auf dem Verteilungstyp.
- * @param {number} drugIndex - Der Index der gewählten Aktion.
- * @param {Array<number|object>} drugProbabilities - Das Array der "wahren" Erfolgsparameter.
- * @param {string} banditType - Der Typ des Banditen.
- * @returns {boolean} True bei Erfolg, False bei Misserfolg.
  */
 export const simulateDrugOutcome = (
     drugIndex: number,
@@ -72,8 +62,6 @@ export const simulateDrugOutcome = (
 
 /**
  * Erstellt ein initiales, leeres Statistik-Objekt.
- * @param {number} numActions - Die Anzahl der Aktionen.
- * @returns {object} Ein Objekt zur Speicherung von Versuchen und Erfolgen.
  */
 export const initializeDrugStats = (numActions: number) => {
     const stats: DrugStats = {};

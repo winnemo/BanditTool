@@ -43,11 +43,8 @@ interface Config {
 
 
 /**
-
  * Props für die ConfigPanel-Komponente.
-
  * Definiert die Daten und Callbacks, die von der übergeordneten Komponente (App.tsx) bereitgestellt werden.
-
  */
 
 interface ConfigPanelProps {
@@ -75,11 +72,8 @@ interface ConfigPanelProps {
 
 
 /**
-
  * Eine "Controlled Component" zur Darstellung und Bearbeitung der Spiel-Konfiguration.
-
  * Sie empfängt den aktuellen Zustand über Props und meldet Änderungen über Callbacks an die Elternkomponente zurück.
-
  */
 
 export function ConfigPanel({
@@ -99,15 +93,8 @@ export function ConfigPanel({
 
 
     /**
-
      * Allgemeiner Handler für Konfigurationsänderungen (Slider, Toggles).
-
      * Stoppt das laufende Spiel, bevor eine Änderung vorgenommen wird.
-
-     * @param {keyof Config} field - Das zu ändernde Feld im Config-Objekt.
-
-     * @param {any} value - Der neue Wert.
-
      */
 
     const handleConfigChange = (field: keyof Config, value: any) => {
@@ -129,13 +116,8 @@ export function ConfigPanel({
 
 
     /**
-
      * Handler zum Hinzufügen oder Entfernen eines Algorithmus aus der Konfiguration.
-
      * Stoppt ebenfalls das laufende Spiel, bevor eine Änderung vorgenommen wird.
-
-     * @param {AlgorithmType} algorithm - Der umzuschaltende Algorithmus.
-
      */
 
     const handleAlgorithmToggle = (algorithm: AlgorithmType) => {
