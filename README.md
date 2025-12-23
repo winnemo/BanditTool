@@ -10,10 +10,12 @@ Dieses Repository enthält eine webbasierte Simulation, die zeigt, wie Reinforce
 
 ### Option 1: Direkt über GitHub Pages (empfohlen)
 
-Die Website ist direkt online verfügbar – keine Installation erforderlich:
-
-👉 **[https://winnemo.github.io/BanditTool/](https://winnemo.github.io/BanditTool/)**
-
+WICHTIG: NICHT MEHR VERFÜGBAR!
+#########################################################################################
+###Die Website ist direkt online verfügbar – keine Installation erforderlich:
+###
+###👉 **[https://winnemo.github.io/BanditTool/](https://winnemo.github.io/BanditTool/)**
+#########################################################################################
 ### Option 2: Lokale Installation
 
 Falls Sie das Projekt lokal ausführen möchten:
